@@ -54,10 +54,7 @@ if($modify) {
 <!DOCTYPE html>
 <html>
     <head>
-        <?php $nostyle = ""; $title = "WorkSpace"; require($_SERVER['DOCUMENT_ROOT'] . '/include/head.php')?>
-        <link rel="stylesheet" href="css/homepage.css">
-        <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" >
-        <meta name="theme-color" content="#006e9c">
+        <?php $nostyle = ""; $title = "WorkSpace"; require('include/head.php')?>
     </head>
     <body class="middle">
     	<div id="present">
