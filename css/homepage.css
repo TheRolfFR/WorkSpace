@@ -1,0 +1,103 @@
+html {
+	padding: 20px;
+}
+/*
+Photo by Kaboompics
+Karolina from Pexels https://www.pexels.com/photo/sunset-field-of-grain-5980/
+*/
+body {
+	background: #eee;
+	background-image: url(https://therolf.fr/workspace/img/background.jpg);
+	background-size: cover;
+	background-position: center;
+	text-align: center;
+	color: white;
+}
+body:after {
+	content: "";
+	display: block;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: black;
+	opacity: .2;
+	z-index: -1;
+}
+form {
+	width: 420px;
+	margin: 0 auto;
+	max-width: 100%;
+	text-align: center;
+	background: #0060AC;
+	-webkit-box-shadow: 0px 0px 5px 0px #1a1a1a;
+	-moz-box-shadow: 0px 0px 5px 0px #1a1a1a;
+	-o-box-shadow: 0px 0px 5px 0px #1a1a1a;
+	box-shadow: 0px 0px 5px 0px #1a1a1a;
+	filter:progid:DXImageTransform.Microsoft.Shadow(color=#1a1a1a, Direction=0, Strength=5);
+	padding: 15px 20px 25px;
+}
+form #title img {
+	max-height: 40px;
+	margin-right: 20px;
+}
+form #advice {
+	margin: 20px;
+	font-style: italic;
+	opacity: .7;
+}
+form input {
+	margin: 15px 0 0;
+	display: block;
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	background: white;
+	border: 0px none;
+	padding: 10px;
+	transition: all .2s linear;
+}
+form input:focus {
+	border-bottom-color: #004c89;
+}
+form .submit {
+	background: #004c89;
+	color: white;
+	text-transform: uppercase;
+}
+#present {
+	width: 66.66%;
+}
+#present + * {
+	width: 33.33%;
+}
+#present > * {
+	text-align: left;
+	width: 610px;
+	max-wisth: 100%;
+}
+#present h2 > * {
+	margin: 10px 0
+}
+#present * {
+	width: 610px;
+	margin: 20px auto;
+}
+@media screen and (max-width: 1020px) {
+	* {
+		max-width: 100%;
+	}
+	html {
+		padding: 0;
+	}
+	body {
+		padding: 10px;
+	}
+	#present {
+		display: none;
+	}
+	#present + * {
+		width: auto;
+	}
+}

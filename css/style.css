@@ -1,0 +1,289 @@
+body {
+    color: white;
+    background: #2F3129;
+}
+#top {
+	overflow: auto;
+	height: 100%;
+	max-width: 100%;
+	min-width: 100%;
+	max-height: 100%;
+}
+#top > * {
+    height: 100%;
+    padding-bottom: 15px;
+}
+#top .ui-resizable-handle {
+	height: 15px;
+	background: #343436;
+	bottom: 0;
+	border-top: 1px solid rgba(255,255,255,.1);
+}
+#main .ace_gutter {
+    background: #272822;
+}
+#preview {
+	height: 0%;
+	overflow: hidden;
+	position: relative;
+	z-index: 5;
+	background: white;
+}
+#preview #urlbar {
+	background: #343436;
+	border-bottom: 1px solid rgb(0,0,0,.75);
+	padding: 0 5px 5px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+}
+#preview #urlbar input {
+	width: 100%;
+	border: 0px none;
+border-radius: 2px;
+-moz-border-radius: 2px;
+-webkit-border-radius: 2px;
+	padding: 5px;
+	color: #fff;
+	background: #222;
+}
+#preview #frame {
+	padding-top: 35px;
+	
+}
+#preview iframe, #preview #frame {
+	height: 100%;
+	width: 100%;
+}
+#w_topbar {
+    background: #0078D7;
+    height: 45px;
+    position: relative;
+    z-index: 4;
+-moz-box-shadow: 0px 0px 5px 0px #343434;
+-webkit-box-shadow: 0px 0px 5px 0px #343434;
+-o-box-shadow: 0px 0px 5px 0px #343434;
+box-shadow: 0px 0px 5px 0px #343434;
+filter:progid:DXImageTransform.Microsoft.Shadow(color=#343434, Direction=NaN, Strength=5);
+}
+#w_topbar #w_logo, #w_nav {
+    width: 13%;
+}
+#e_editors, #w_topbar #e_tabs {
+    width:87%;
+}
+#w_topbar > .middle {
+    height: 100%;
+}
+#w_topbar #w_logo {
+    text-align: center;
+    background: rgba(0,0,0,.05);
+    padding: 5px 0;
+}
+#w_topbar #w_logo img {
+    margin-right: 5px;
+}
+#w_topbar #e_tabs {
+    background: rgba(0,0,0,.2);
+    padding-right: 90px;
+}
+#w_topbar #e_tabs .tab {
+    height: 100%;
+    padding: 0 10px;
+    cursor: pointer;
+    background: #0060AC;
+    border-right: 1px solid rgba(0, 0, 0, 0.15);
+}
+#w_topbar #e_tabs .tab .file:before {
+    margin: 0;
+}
+#w_topbar #e_tabs .file + .close {
+    padding-left: 5px;
+    font-size: .6em;
+}
+#w_topbar #e_tabs .tab .close:before {
+    content: "\f111";
+}
+#w_topbar #e_tabs .tab:hover .close:before, #w_topbar #e_tabs .tab.saved .close:before {
+    content: "\f00d";
+    font-family: 'FontAwesome';
+}
+#w_topbar #e_tabs .tab.active {
+    background: #00589F;
+}
+#w_topbar #e_tabs .tab div:before {
+    font-family: "FontAwesome";
+    margin-right: 5px;
+}
+#w_topbar #e_tabs #e_tab_add {
+    height: 100%;
+    width: 45px;
+    text-align: center;
+    cursor: pointer;
+}
+#w_topbar form {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: white;
+    text-align: center;
+    color: #0094d2;
+    padding: 0 10px;
+    z-index: 5;
+}
+#w_topbar form label {
+    width: 100%;
+    height: 100%;
+}
+.united div:before {
+    content: "\f016";
+}
+#main {
+    position: absolute;
+    top: 45px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #333;
+}
+#w_nav {
+    overflow: auto;
+    height: 100%;
+    padding: 12px 0;
+    font-size: 14px;
+    overflow-wrap:break-word;
+    word-break: break-all;
+    position: relative;
+}
+#w_nav li > a, #w_nav li.file {
+    padding: 1px 0 1px 16px;
+}
+#w_nav li a:hover, #w_nav li a.hover, #w_nav .file:hover, #w_nav .file.hover {
+    background: #0060ac;
+}
+#w_nav li a {
+    width: 100%;
+    display: block;
+}
+#w_nav ol ol {
+    margin-left: 16px;
+    border-left: 1px solid #444;
+}
+#w_nav .folder:before {
+    content: "\f07b";
+    font-family: "FontAwesome";
+    margin-right: 5px;
+    width: 14px;
+    display: inline-block;
+}
+#w_nav .folder.charged:before {
+    content: "\f07c";
+}
+.file {
+	cursor: pointer;
+}
+.file:before {
+    content: url(../img/icons/default.svg);
+    height: 22px;
+    width: 22px;
+    display: inline-block;
+    margin:-5px 0 -5px -4px;
+    vertical-align: middle;
+}
+.file.php:before {
+    content: url(../img/icons/php.svg);
+}
+.file.txt:before {
+    content: url(../img/icons/default.svg);
+}
+.file.svg:before {
+    content: url(../img/icons/svg.svg);
+}
+.file.css:before {
+    content: url(../img/icons/css.svg);
+}
+.file.js:before {
+    content: url(../img/icons/javascript.svg);
+}
+.file.psd:before {
+    content: url(../img/icons/photoshop.svg);
+}
+.file.ico:before {
+    content: url(../img/icons/favicon.svg);
+}
+.file.png:before, .file.jpg:before, .file.jpeg:before, .file.bmp:before {
+    content: url(../img/icons/image.svg);
+}
+.file.eot:before, .file.woff:before, .file.woff2:before, .file.ttf:before, .file.otf:before, .file.otc:before, .file.ttc:before {
+    content: url(../img/icons/font.svg);
+}
+.file.html:before {
+    content: url(../img/icons/html.svg);
+}
+.file.json:before {
+    content: url(../img/icons/json.svg);
+}
+#note {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	width: 400px;
+	text-align: center;
+	height: 50px;
+	line-height: 25px;
+    margin: -25px 0 0 -200px;
+    opacity: .7;
+    z-index: 2;
+}
+#e_editors .editor {
+    margin: 0;
+    position: relative;
+    height: 100%;
+    font-size: 14px;
+    z-index: 10;
+}
+#e_editors {
+    position: relative;
+    height: 100%;
+}
+#notifcenter {
+    position: fixed;
+    top: 70px;
+    right: 0;
+    z-index: 50;
+}
+#notifcenter .notif {
+    background: #333;
+    color: white;
+}
+.notif i {
+    margin-right: 10px;
+}
+.notif.green i {
+    color: green;
+}
+.notif.red i {
+    color: red;
+}
+
+
+/* Workspace Editor */
+
+#expandexplorer {
+    position: absolute;
+    top: 0;
+    right:0;
+    margin: 5px;
+}
+
+/* custoMenu */
+.custoMenu li {
+    padding: 0 3px;
+}
+
+/* miniNotif */
+body #miniNotif .miniNotif {
+    background: #333333;
+}
