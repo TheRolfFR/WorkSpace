@@ -1,5 +1,4 @@
 <?php
-session_start();
 require('verifco.php');
 
 if(connected())  {
@@ -42,11 +41,13 @@ if($modify) {
     $form = '<div id="advice">Advice: don\'t use WorkSpace in a public Wi- without a SSL certificate</div>' . 
     '<input type="password" required autofocus name="password" placeholder="Password">';
 
-    if(check($_POST['password'])) {
-        $password = md5($_POST['password']);
-        if($password == $file) {
-            $_SESSION['session'] = $password;
-            redirect('editor');
+    if(check($_POST)) {
+        if(check($_POST['password'])) {
+            $password = md5($_POST['password']);
+            if($password == $file) {
+                $_SESSION['session'] = $password;
+                redirect('editor');
+            }
         }
     }
 }
