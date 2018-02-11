@@ -14,7 +14,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <?php $nostyle = ""; $title = "WorkSpace"; require_once($_SERVER['DOCUMENT_ROOT'] . '/include/head.php'); ?>
+        <?php $nostyle = ""; $title = "WorkSpace"; require_once('include/head.php'); ?>
         <link rel="stylesheet" href="css/style.css">
         
         <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
