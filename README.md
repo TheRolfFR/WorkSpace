@@ -9,7 +9,7 @@
 ### 1. Unzip WorkSpace in your hosting
 ### 2. Modify your password
 
-<img src="https://image.noelshack.com/fichiers/2018/06/7/1518371327-screenshot-2018-2-11-workspace.jpg" alt="Reset password" />
+<img src="https://image.noelshack.com/fichiers/2018/06/7/1518371533-screenshot-2018-2-11-workspace-1.jpg" alt="Reset password" />
 
 ### 3. Enjoy !
 
