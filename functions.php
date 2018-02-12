@@ -1,8 +1,10 @@
 <?php
 
 function check($var) {
-    if(isset($var) and !empty($var)) {
-        return true;
+    if(isset($var)) {
+        if(!empty($var)) {
+            return true;
+        }
     }
     return false;
 }
@@ -23,9 +25,9 @@ function redirect($location) {
             case 'this':
                 header('Location: http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
                 break;
-                case 'editor':
-                    header('Location: http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . 'editor.php');
-                    break;
+            case 'editor':
+                header('Location: editor.php');
+                break;
         }
         exit();
     }

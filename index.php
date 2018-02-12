@@ -55,6 +55,7 @@ if($modify) {
 <!DOCTYPE html>
 <html>
     <head>
+        <link rel="stylesheet" href="css/homepage.css">
         <?php $nostyle = ""; $title = "WorkSpace"; require('include/head.php')?>
     </head>
     <body class="middle">
