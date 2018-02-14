@@ -65,11 +65,11 @@ if($modify) {
     			<div>Everywhere</div>
     			<div>Anywhere</div>
     		</h2>
-    		<img src="https://therolf.fr/workspace/img/screen.png" alt="picture">
+    		<img src="img/screen.png" alt="picture">
     	</div><div class="quart">
     		<form action="" method="post">
     			<h3 class="middle" id="title">
-    				<img src="https://therolf.fr/workspace/img/workspace_logo_no_bg_white.png" alt="WS"><span>WorkSpace</span>
+    				<img src="img/workspace_logo_no_bg_white.png" alt="WS"><span>WorkSpace</span>
     			</h3>
                 <?= $form; ?>
     			<input value="Connect" class="submit" type="submit">
