@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_PARSE);
 
 function check($var) {
     if(isset($var)) {
