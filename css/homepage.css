@@ -7,7 +7,7 @@ Karolina from Pexels https://www.pexels.com/photo/sunset-field-of-grain-5980/
 */
 body {
 	background: #eee;
-	background-image: url(https://therolf.fr/workspace/img/background.jpg);
+	background-image: url(../img/background.jpg);
 	background-size: cover;
 	background-position: center;
 	text-align: center;
