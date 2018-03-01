@@ -288,7 +288,7 @@ var filectxmenu = {
 			text: '<i class="fa fa-pencil" aria-hidden="true"></i> Open',
 			desc: 'Open',
 			func: function() {
-				openFile(custoMenu.element);
+				openFile(custoMenu.element.attr('data-src'));
 			}
 		},
 		'downloadfile' : { 
@@ -419,7 +419,7 @@ $(document).ready(function(){
     // how to open a file
     $(document).on('click', '.context.file', function(e){
         e.preventDefault();
-        openFile($(this));
+        openFile($(this).attr('data-src'));
     });
     
     // load context menus

@@ -27,40 +27,40 @@ function iframeload() {
     }
 }
 
-function openFile(element = '', file='', name='') {
-    // get infos
-    if(file !== '' || element.attr('data-name') == 'file') {
-        if(element !== '') {
-            var ext = element.attr('data-ext');
-            file = element.attr('data-src');
-            name = element.text();
-        } else {
-            var re = /(.*)\/(([^\/]*)\.([^\/]+))$/g ;
-            var ext = file.replace(re, '$4');
-        }
-    
-        //check if file isnt opened
-        var id = false;
-        var existing = Workspace.searchEditor('dir',file);
-    
-        if(existing !== undefined) {
-            Workspace.switchEditor(existing.id);
-        } else {
-            var url = window.location.href;
-            var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
-    
-            $.get( parent + "access.php", { "file": file}, function(data) {
-                data = JSON.parse(data);
-    
-                if((data[0] == 'text') || (data[0] == 'inode')) {
-                    Workspace.addEditor(ext, file, name, data[1]);
-                    return;
-                } else {
-                    $('<form target="_blank" action="' + file + '" method="get"></form>').appendTo('body').submit().remove();
-                    return;
-                }
-            });
-        }
+function check_required(array,required) {
+    var response = true;
+    for(var i = 0; i < required.length; i++) {
+        if(!(required[i] in array)) { response = false; }
+    }
+    return response;
+}
+
+function openFile(directory) {
+    // look for existing opened editor
+    var existing = Workspace.searchEditor('directory', directory);
+    if(existing !== undefined) {
+        Workspace.switchEditor(existing.id);
+    } else {
+        var url = window.location.href;
+        var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
+
+        $.get( parent + "access.php", { "file": directory }, function(data) {
+            data = JSON.parse(data);
+            
+            console.log(data[0]);
+            if((data[0] == 'text') || (data[0] == 'inode')) {
+                // add an editor
+                Workspace.addEditor({
+                    'directory': directory,
+                    'content': data[1]
+                });
+                return;
+            } else {
+                // or open a popup
+                $('<form target="_blank" action="' + directory + '" method="get"></form>').appendTo('body').submit().remove();
+                return;
+            }
+        });
     }
 }
 
@@ -105,9 +105,11 @@ var Workspace = {
         var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
         
         $.getJSON(parent + "savetabs.json", function( data ) {
-            console.log(data);
             for(var i = 0; i < data.length; i++) {
-                    openFile('', data[i].dir, data[i].filename);
+                    var required = ["directory"];
+                    if(check_required(data[i], required)) {
+                        openFile(data[i].directory);
+                    }
             }
         });
     },
@@ -117,125 +119,102 @@ var Workspace = {
         if(addornot) { element.addClass('saved') } else { element.removeClass('saved') }
     },
 
-    addEditor: function(type = '', dir = '', filename = 'united', content = '') {
-        // add a new tab
-        $(this.tabs_element).append('<div class="' + this.lastid + ' tab middle" alt="' + this.lastid + '"><div class="file ' + type + '">' + filename + '</div><div class="close"></div><span class="taille"></span></div>');
+    addEditor: function(array) {
         
-        var object = {
-            type: type,
-            dir: dir,
-            filename: filename,
-            id: this.lastid,
-            name: "editor" + this.lastid,
-            saved: true
-        }
-
-        // add a new pre
-        $(this.editors_element).append('<pre id="' + object.name + '" class="editor"></pre>');
+        var required = ['directory', 'content'];
+        if(check_required(array, required)) {
+            // get extension and filename
+            var regex = /\/([^\/]*)\.([^\.]+)$/ ;
+            var matches = array['directory'].match(regex);
+            var extension = matches[2];
+            var filename = matches[1] + '.' + matches[2];
+            
+            // add a new tab
+            $(this.tabs_element).append('<div class="' + this.lastid + ' tab middle" alt="' + this.lastid + '"><div class="file ' + extension + '">' + filename + '</div><div class="close"></div><span class="taille"></span></div>');
+            
+            // prepare object
+            var object = {
+                directory: array['directory'],
+                id: this.lastid,
+                filename: filename,
+                name: "editor" + this.lastid,
+                saved: true
+            }
+            
+            // add a new pre (before editor)
+            $(this.editors_element).append('<pre id="' + object.name + '" class="editor"></pre>');
+            
+            // create editor
+            ace.require("ace/ext/language_tools");
+            ace.require("ace/ext/emmet");
         
-        // create editor
-        ace.require("ace/ext/language_tools");
-        ace.require("ace/ext/emmet");
+            // ace editor refers to id
+            e = ace.edit(object.name);
+            e.$blockScrolling = Infinity;
+            
+            //Set content
+            e.setValue(array['content']);
+            
+            // set style
+            e.setTheme("ace/theme/monokai");
+            e.setShowPrintMargin(false);
+            
+            // add commands
+            e.commands.addCommand({
+                name: "save",
+                bindKey: { win: "ctrl-s", mac: "cmd-s" },
+                exec: function (e) {
+                    save(array['directory'], e.getValue());
+                    object.saved = true;
+                    Workspace.switchClassSaved(1, '.tab.' + object.id);
+                    Workspace.saveTabs();
+                }
+            });
+            e.commands.addCommand({
+                name: 'close',
+                bindKey: { win: 'alt-w', mac: 'alt-w' },
+                exec: function (e) {
+                    Workspace.deleteEditor(object.id, array['directory']);
+                }
+            });
+        
+            //set type
+            console.log(extension);
+            if (extension == 'js') {
+                extension = 'javascript';
+            }
+            e.session.setMode("ace/mode/" + extension);
+        
+            // set options
+            e.setOptions({
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: false
+            });
+            e.setOption("enableEmmet", true);
+            e.getSession().setUseWrapMode(true);
+        
+            // focus e
+            e.focus();
+        
+            // goto line 0,0
+            e.gotoLine(0, 0);
     
-        // ace editor refers to id
-        e = ace.edit(object.name);
-        e.$blockScrolling = Infinity;
-        
-        //Set content
-        e.setValue(content);
-        
-        e.setTheme("ace/theme/monokai");
-        e.setShowPrintMargin(false);
-        e.commands.addCommand({
-            name: "save",
-            bindKey: { win: "ctrl-s", mac: "cmd-s" },
-            exec: function (e) {
-                save(dir, e.getValue());
-                object.saved = true;
-                localStorage[dir] = filename;
-                Workspace.switchClassSaved(1, '.tab.' + object.id);
+            object.ace_editor = e;
+    
+            this.list.push(object);
+            this.lastid++;
+            
+            e.on('input', function () {
+                object.saved = false;
                 Workspace.saveTabs();
-            }
-        });
-        e.commands.addCommand({
-            name: 'close',
-            bindKey: { win: 'alt-w', mac: 'alt-w' },
-            exec: function (e) {
-                Workspace.deleteEditor(object.id, dir);
-            }
-        });
-        /*e.commands.addCommand({
-            name: 'new',
-            bindKey: { win: 'ctrl-t', mac: 'cmd-t' },
-            exec: function (e) {
-                Workspace.addEditor();
-            }
-        });*/
-    
-        //set type
-        if (type !== '') {
-            if (type == 'js') {
-                type = 'javascript';
-            }
-            e.session.setMode("ace/mode/" + type);
+                Workspace.switchClassSaved(0, '.tab.' + object.id);
+            });
+            
+            this.switchEditor(object.id);
+            
+            Workspace.switchClassSaved(1, object.id);
         }
-    
-        // set options
-        e.setOptions({
-            enableBasicAutocompletion: true,
-            enableSnippets: true,
-            enableLiveAutocompletion: false
-        });
-        e.setOption("enableEmmet", true);
-        e.getSession().setUseWrapMode(true);
-    
-        // focus e
-        e.focus();
-    
-        // goto line 0,0
-        e.gotoLine(0, 0);
-
-        object.editor = e;
-
-        this.list.push(object);
-        this.lastid++;
-        
-        e.on('input', function () {
-            object.saved = false;
-            Workspace.saveTabs();
-            Workspace.switchClassSaved(0, '.tab.' + object.id);
-        });
-
-        this.switchClassSaved(1, object.id);
-        this.switchEditor(object.id);
-        
-        object.saved = false;
-        Workspace.switchClassSaved(1, '.tab.' + object.id);
-    },
-
-    modifyEditor: function(e, type = '', dir ='', filename ='', content = '') {
-        e.type = type;
-        e.dir = dir;
-        e.filename = filename;
-        e.saved =false;
-        
-        e.editor.setValue(content);
-        
-        //modify entry
-        localStorage[dir] = filename;
-
-        // change class before set mode cause js add js class
-        $(this.tabs_element + ' .' + e.id + ' .file').addClass(e.type).text(e.filename);
-
-        if (e.type !== '') {
-            if (e.type == 'js') {
-                e.type = 'javascript';
-            }
-            e.editor.session.setMode("ace/mode/" + e.type);
-        }
-
-        e.editor.gotoLine(0,0);
-        this.switchEditor(e.id);
     },
 
     // return object with id
@@ -270,7 +249,7 @@ var Workspace = {
         // editors
         $(this.editors_element + ' > .editor').hide();
         var e = this.searchEditor('id',id);
-        e.editor.focus();
+        e.ace_editor.focus();
         
         // title
         $('title').text('WorkSpace - ' + e.filename);
@@ -315,9 +294,9 @@ var Workspace = {
            var active = $(this).hasClass('active');
            
            json[i] = {
-               dir: editor.dir,
+               directory: editor.directory,
                filename: editor.filename,
-               cursor: editor.editor.getCursorPosition(),
+               cursor: editor.ace_editor.getCursorPosition(),
                active: active
            }
         });
