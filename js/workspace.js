@@ -41,10 +41,7 @@ function openFile(directory) {
     if(existing !== undefined) {
         Workspace.switchEditor(existing.id);
     } else {
-        var url = window.location.href;
-        var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
-
-        $.get( parent + "access.php", { "file": directory }, function(data) {
+        $.get("access.php", { "file": directory }, function(data) {
             console.log(data);
             data = JSON.parse(data);
             
@@ -102,10 +99,7 @@ var Workspace = {
     lastid: 0,
 
     init: function() {
-        var url = window.location.href;
-        var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
-        
-        $.getJSON(parent + "savetabs.json", function( data ) {
+        $.getJSON("savetabs.json", function( data ) {
             for(var i = 0; i < data.length; i++) {
                     var required = ["directory"];
                     if(check_required(data[i], required)) {
@@ -283,9 +277,6 @@ var Workspace = {
     
     // save names of edited files
     saveTabs: function() {
-        var url = window.location.href;
-        var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
-            
         var json = {};
         
         $(document).find(this.tabs_element + ' ' + this.tab_element).each(function(i){
@@ -303,7 +294,7 @@ var Workspace = {
         });
         json = JSON.stringify(json);
         
-        $.get( parent + "savetabs.php", { "json": json}, function(data) {
+        $.get("savetabs.php", { "json": json}, function(data) {
             if(data != 'done') {
                 miniNotif.addNotif(1, data, '<i class="material-icons">&#xE5CD;</i>', 'red');
             }
