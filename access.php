@@ -60,7 +60,7 @@ if(connected()) {
             if(preg_match('/(.+)\/$/', $element)) {
                 $retour .= '<li><a class="folder context custoMe" href="' . $parent . $element . '" data-name="folder" data-src="' . $parent . $element . '">' . rtrim($element,'/') . '</a></li>';
             } else {
-                $ext = preg_replace("#(.+)\.(.+)#", '$2', $element);
+                $ext = trim(preg_replace("#(.+)\.(.+)#", '$2', $element), '.');
                 $retour .= '<li><a class="context custoMe file ' . $ext . '" href="' . $parent . $element . '" data-name="file" data-src="' . $parent . $element . '" data-ext="' . $ext . '">' . $element . '</a></li>';
             }
         }
@@ -94,6 +94,7 @@ if(connected()) {
         }
     }
 } else {
+    echo "not connected";
     return null;
 }
 ?>

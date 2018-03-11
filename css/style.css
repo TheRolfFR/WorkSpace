@@ -225,6 +225,13 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=#343434, Direction=NaN, St
 .file.json:before {
     content: url(../img/icons/json.svg);
 }
+.file.htaccess:before {
+    content: url(../img/icons/config.svg);
+}
+.file.gitignore:before {
+    content: url(../img/icons/git_ignore.svg);
+}
+
 #note {
 	position: fixed;
 	top: 50%;

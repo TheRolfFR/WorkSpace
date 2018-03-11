@@ -45,6 +45,7 @@ function openFile(directory) {
         var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
 
         $.get( parent + "access.php", { "file": directory }, function(data) {
+            console.log(data);
             data = JSON.parse(data);
             
             console.log(data[0]);
@@ -372,6 +373,7 @@ $(document).on('click', '.tab .close', function(event){
     var id = $(this).parent().attr('alt');
     var dir = Workspace.searchEditor('id',id).dir;
     Workspace.deleteEditor(id, dir);
+    Workspace.saveTabs();
 });
 
 $(document).ready(function() {

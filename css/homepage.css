@@ -7,11 +7,12 @@ Karolina from Pexels https://www.pexels.com/photo/sunset-field-of-grain-5980/
 */
 body {
 	background: #eee;
-	background-image: url(../img/background.jpg);
+	background-image: url(https://therolf.fr/workspace/img/background.jpg);
 	background-size: cover;
 	background-position: center;
 	text-align: center;
 	color: white;
+	background-attachment: fixed;
 }
 body:after {
 	content: "";
@@ -27,7 +28,7 @@ body:after {
 }
 form {
 	width: 420px;
-	margin: 0 auto;
+	margin: 10px auto;
 	max-width: 100%;
 	text-align: center;
 	background: #0060AC;
@@ -65,6 +66,17 @@ form .submit {
 	background: #004c89;
 	color: white;
 	text-transform: uppercase;
+}
+#github {
+    background: #ccc;
+	width: 420px;
+	max-width: 100%;
+    color: black;
+    font-size: 14px;
+	margin: 20px auto 10px;
+}
+#github i {
+    margin: 0 5px;
 }
 #present {
 	width: 66.66%;
