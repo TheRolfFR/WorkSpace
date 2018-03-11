@@ -55,8 +55,8 @@ if($modify) {
 <!DOCTYPE html>
 <html>
     <head>
-        <link rel="stylesheet" href="css/homepage.css">
         <?php $nostyle = ""; $title = "WorkSpace"; require('include/head.php')?>
+        <link rel="stylesheet" href="css/homepage.css">
     </head>
     <body class="middle">
     	<div id="present">
@@ -74,6 +74,9 @@ if($modify) {
                 <?= $form; ?>
     			<input value="Connect" class="submit" type="submit">
     		</form>
+    		<a href="https://github.com/TheRolfFR/WorkSpace"><div class="element" id="github">
+    		    <i class="fa fa-github-alt" aria-hidden="true"></i><span> VIEW ON GITHUB</span>
+    		</div></a>
     	</div><span class="taille"></span>
     </body>
 </html>
