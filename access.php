@@ -76,7 +76,7 @@ if(connected()) {
         if(check($_GET['file'])) {
             $retour = array();
 
-            $dir = $_SERVER['DOCUMENT_ROOT'] . sec($_GET['file']);
+            $dir = '..' . sec($_GET['file']);
             
             if(file_exists($dir)) {
                 $finfo = finfo_open(FILEINFO_MIME_TYPE); // Retourne le type mime à l'extension mimetype
