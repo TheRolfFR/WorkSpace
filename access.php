@@ -77,20 +77,25 @@ if(connected()) {
             $retour = array();
 
             $dir = $_SERVER['DOCUMENT_ROOT'] . sec($_GET['file']);
-
-            $finfo = finfo_open(FILEINFO_MIME_TYPE); // Retourne le type mime à l'extension mimetype
-            $mime = finfo_file($finfo, $dir);
-            finfo_close($finfo);
-
-            $type = preg_replace('/(.+)\/(.+)/', '$1', $mime);
-
-            array_push($retour, $type);
-            if($type == 'text') {
-                array_push($retour, '' . file_get_contents($dir));
+            
+            if(file_exists($dir)) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE); // Retourne le type mime à l'extension mimetype
+                $mime = finfo_file($finfo, $dir);
+                finfo_close($finfo);
+    
+                $type = preg_replace('/(.+)\/(.+)/', '$1', $mime);
+    
+                array_push($retour, $type);
+                if($type == 'text') {
+                    array_push($retour, '' . file_get_contents($dir));
+                }
+    
+                $retour = json_encode($retour);
+                print_r($retour);
+            } else {
+                print_r("File not existing");
             }
 
-            $retour = json_encode($retour);
-            print_r($retour);
         }
     }
 } else {
