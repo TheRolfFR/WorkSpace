@@ -11,13 +11,25 @@ body {
 }
 #top > * {
     height: 100%;
-    padding-bottom: 15px;
+    padding-bottom: 20px;
 }
 #top .ui-resizable-handle {
-	height: 15px;
+	height: 20px;
 	background: #343436;
 	bottom: 0;
 	border-top: 1px solid rgba(255,255,255,.1);
+}
+#top .ui-resizable-handle::after {
+	content: "PREVIEW";
+	font-size: 11px;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	padding-left: 5px;
+	line-height: 20px;
+	font-weight: 600;
+	color: #ccc;
 }
 #main .ace-monokai .ace_gutter {
     background: #272822;
@@ -31,7 +43,7 @@ body {
 }
 #preview #urlbar {
 	background: #343436;
-	border-bottom: 1px solid rgb(0,0,0,.75);
+	border-bottom: 1px solid rgb(0,0,0,.4);
 	padding: 0 5px 5px;
 	position: absolute;
 	top: 0;
@@ -69,9 +81,11 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=#343434, Direction=NaN, St
 }
 #w_topbar #w_logo, #w_nav {
     width: 13%;
+    min-width: 200px;
 }
 #e_editors, #w_topbar #e_tabs {
     width:87%;
+    max-width: calc(100% - 200px);
 }
 #w_topbar > .middle {
     height: 100%;

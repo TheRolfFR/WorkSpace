@@ -40,6 +40,13 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=#252525, Direction=0, Stre
 #settings #top span {
 	font-size: 1.4em;
 }
+#github {
+    background: #ccc;
+    color: black;
+    font-size: 14px;
+	margin: 10px auto;
+	text-align: center;
+}
 #main .title {
 	margin: 20px 0;
 	font-size: 1.5em;

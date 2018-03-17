@@ -67,9 +67,9 @@
                     </div>
                 </div>
             </div><div id="preview">
-            	<div id="urlbar">
+            	<form id="urlbar">
             		<input type="text" name="" id="" placeholder="Preview url here">
-            	</div>
+            	</form>
             	<div id="frame">
             		<iframe src="/" frameborder="0"></iframe>
             	</div>

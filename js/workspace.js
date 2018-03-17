@@ -114,6 +114,8 @@ var Workspace = {
 
     init: function() {
         $.getJSON("savetabs.json", function( data ) {
+            
+            // editors
             if(data.hasOwnProperty('editors')) {
                 for(var i = 0; i < data.editors.length; i++) {
                         var required = ["directory"];
@@ -121,6 +123,15 @@ var Workspace = {
                             openFile(data.editors[i].directory, data.editors[i].cursor);
                         }
                 }
+            }
+            
+            // preview
+            if(data.hasOwnProperty('preview')) {
+                var preview = data.preview;
+                $(document).find('#preview').css('height', preview.height);
+                $(document).find('#main #top').css('height', $(document).find('#main #top').innerHeight() - preview.height);
+                $(document).find('#preview input').val(preview.url);
+                $(document).find('#preview #urlbar').submit();
             }
         });
     },
@@ -130,19 +141,19 @@ var Workspace = {
         var json = {};
         
         // nav
+        json.explorer = {};
         $(document).find('.folder.charged').each(function(i){
-            json.explorer = {};
             json.explorer[i] = $(this).attr('data-src');
         });
         
-        // tabs
+        // editors
+        json.editors = {};
         $(document).find(this.tabs_element + ' ' + this.tab_element).each(function(i){
            var editorId = parseInt($(this).attr('alt')); 
            var editorIndex = Workspace.searchEditor('id', editorId, true);
            var editor = Workspace.list[editorIndex];
            var active = $(this).hasClass('active');
            
-           json.editors = {};
            json.editors[i] = {
                directory: editor.directory,
                filename: editor.filename,
@@ -437,9 +448,9 @@ $(document).ready(function() {
     $( "#sortable" ).disableSelection();
     
     // update iframe on enter key
-    $('#urlbar input').on('keydown', function(e) {
-    	if (e.which == '13'){
-    		iframeload();
-      }
+    $('#urlbar').on('submit', function(e) {
+        e.preventDefault();
+        iframeload();
+        Workspace.saveWs();
     });
 });

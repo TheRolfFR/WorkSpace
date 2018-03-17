@@ -43,6 +43,10 @@
             $class = "error";
         }
     }
+    $version = file_get_contents('version.txt');
+    $last_version = file_get_contents('https://raw.githubusercontent.com/TheRolfFR/WorkSpace/master/version.txt');
+    $message_update = ($version < $last_version) ? 'not updated' : 'up-to-date';
+    $github_message = ($version < $last_version) ? 'DOWNLOAD LATEST VERSION ON GITHUB' : 'VIEW ON GITHUB';
 ?>
 <!DOCTYPE html>
 <html>
@@ -59,7 +63,10 @@
     		</a>
     		<div id="main">
     			<div class="title">Version</div>
-    			<div>Version <b>1.3.2</b> up-to-date</div>
+    			<div>Version <b><?= $version; ?></b> <?= $message_update ?></div>
+        		<a href="https://github.com/TheRolfFR/WorkSpace" target="_blank"><div class="element" id="github">
+        		    <i class="fa fa-github-alt" aria-hidden="true"></i><span> <?= $github_message; ?></span>
+        		</div></a>
     			<div class="title">Modify password</div>
     			<form action="" method="post">
     				<label for="currentpassword">
