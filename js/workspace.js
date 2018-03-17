@@ -35,28 +35,42 @@ function check_required(array,required) {
     return response;
 }
 
-function openFile(directory) {
+function openFile(directory, cursor = "") {
     // look for existing opened editor
     var existing = Workspace.searchEditor('directory', directory);
     if(existing !== undefined) {
         Workspace.switchEditor(existing.id);
     } else {
+        // grt file content
         $.get("access.php", { "file": directory }, function(data) {
-            console.log(data);
+            // data protection
             data = JSON.parse(data);
-            
-            console.log(data[0]);
-            if((data[0] == 'text') || (data[0] == 'inode')) {
-                // add an editor
-                Workspace.addEditor({
-                    'directory': directory,
-                    'content': data[1]
-                });
-                return;
-            } else {
-                // or open a popup
-                $('<form target="_blank" action="' + directory + '" method="get"></form>').appendTo('body').submit().remove();
-                return;
+            if(typeof data =='object')
+            {
+                if((data[0] == 'text') || (data[0] == 'inode')) {
+                    // add an editor
+                    data[1] = (data.length == 1) ? "": data[1];
+                    var array = {
+                        'directory': directory,
+                        'content': data[1]
+                    };
+                    if(cursor != "") {
+                        array.cursor = cursor;
+                    }
+                    Workspace.addEditor(array);
+                    return;
+                } else {
+                    // or open a popup
+                    $('<form target="_blank" action="' + directory + '" method="get"></form>').appendTo('body').submit().remove();
+                    return;
+                }
+            }
+            else
+            {
+                console.log("Error loading the file, data received : ");
+                console.log(data);
+                var icon = '<i class="material-icons">&#xE161;</i>';
+                miniNotif.addNotif(1, "Error loading the file, please check the console", icon, 'red');
             }
         });
     }
@@ -100,18 +114,55 @@ var Workspace = {
 
     init: function() {
         $.getJSON("savetabs.json", function( data ) {
-            for(var i = 0; i < data.length; i++) {
-                    var required = ["directory"];
-                    if(check_required(data[i], required)) {
-                        openFile(data[i].directory);
-                    }
+            if(data.hasOwnProperty('editors')) {
+                for(var i = 0; i < data.editors.length; i++) {
+                        var required = ["directory"];
+                        if(check_required(data.editors[i], required)) {
+                            openFile(data.editors[i].directory, data.editors[i].cursor);
+                        }
+                }
             }
         });
     },
     
-    switchClassSaved: function(addornot, selector) {
-        var element = $(document).find(selector);
-        if(addornot) { element.addClass('saved') } else { element.removeClass('saved') }
+    // save names of edited files
+    saveWs: function() {
+        var json = {};
+        
+        // nav
+        $(document).find('.folder.charged').each(function(i){
+            json.explorer = {};
+            json.explorer[i] = $(this).attr('data-src');
+        });
+        
+        // tabs
+        $(document).find(this.tabs_element + ' ' + this.tab_element).each(function(i){
+           var editorId = parseInt($(this).attr('alt')); 
+           var editorIndex = Workspace.searchEditor('id', editorId, true);
+           var editor = Workspace.list[editorIndex];
+           var active = $(this).hasClass('active');
+           
+           json.editors = {};
+           json.editors[i] = {
+               directory: editor.directory,
+               filename: editor.filename,
+               cursor: editor.ace_editor.getCursorPosition(),
+               active: active
+           };
+        });
+        
+        // preview
+        json.preview = {
+            "height" : $(document).find('#preview').innerHeight(),
+            "url" : $(document).find('#preview input').val()
+        };
+        
+        json = JSON.stringify(json);
+        $.get("savetabs.php", { "json": json}, function(data) {
+            if(data != 'done') {
+                miniNotif.addNotif(1, data, '<i class="material-icons">&#xE5CD;</i>', 'red');
+            }
+        });
     },
 
     addEditor: function(array) {
@@ -162,7 +213,7 @@ var Workspace = {
                     save(array['directory'], e.getValue());
                     object.saved = true;
                     Workspace.switchClassSaved(1, '.tab.' + object.id);
-                    Workspace.saveTabs();
+                    Workspace.saveWs();
                 }
             });
             e.commands.addCommand({
@@ -174,7 +225,6 @@ var Workspace = {
             });
         
             //set type
-            console.log(extension);
             if (extension == 'js') {
                 extension = 'javascript';
             }
@@ -192,8 +242,16 @@ var Workspace = {
             // focus e
             e.focus();
         
-            // goto line 0,0
-            e.gotoLine(0, 0);
+            // goto cursor else goto line 1, comumn 0
+            var row = 1;
+            var column = 0;
+            if(array.hasOwnProperty('cursor')) {
+                if(array.cursor.hasOwnProperty('row') && array.cursor.hasOwnProperty('column')) {
+                    row = array.cursor.row;
+                    column = array.cursor.column;
+                }
+            }
+            e.gotoLine(row, column);
     
             object.ace_editor = e;
     
@@ -202,7 +260,7 @@ var Workspace = {
             
             e.on('input', function () {
                 object.saved = false;
-                Workspace.saveTabs();
+                Workspace.saveWs();
                 Workspace.switchClassSaved(0, '.tab.' + object.id);
             });
             
@@ -210,6 +268,11 @@ var Workspace = {
             
             Workspace.switchClassSaved(1, object.id);
         }
+    },
+    
+    switchClassSaved: function(addornot, selector) {
+        var element = $(document).find(selector);
+        if(addornot) { element.addClass('saved') } else { element.removeClass('saved') }
     },
 
     // return object with id
@@ -230,7 +293,7 @@ var Workspace = {
     switchEditor: function(id = undefined) {
         if(id === undefined) {
             if(this.list.length) {
-                id = this.list[0].id;
+                id = Workspace.list[0].id;
             } else {
                 $('title').text('WorkSpace');
                 return;
@@ -252,7 +315,7 @@ var Workspace = {
         $('#' + e.name).show();
         
         //save tabs
-        Workspace.saveTabs();
+        Workspace.saveWs();
     },
 
     // delete editor
@@ -273,32 +336,6 @@ var Workspace = {
 
         //switch to first tab
         this.switchEditor();
-    },
-    
-    // save names of edited files
-    saveTabs: function() {
-        var json = {};
-        
-        $(document).find(this.tabs_element + ' ' + this.tab_element).each(function(i){
-           var editorId = parseInt($(this).attr('alt')); 
-           var editorIndex = Workspace.searchEditor('id', editorId, true);
-           var editor = Workspace.list[editorIndex];
-           var active = $(this).hasClass('active');
-           
-           json[i] = {
-               directory: editor.directory,
-               filename: editor.filename,
-               cursor: editor.ace_editor.getCursorPosition(),
-               active: active
-           }
-        });
-        json = JSON.stringify(json);
-        
-        $.get("savetabs.php", { "json": json}, function(data) {
-            if(data != 'done') {
-                miniNotif.addNotif(1, data, '<i class="material-icons">&#xE5CD;</i>', 'red');
-            }
-        });
     }
 }
 
@@ -362,9 +399,9 @@ $(document).on('keydown', function(e) {
 $(document).on('click', '.tab .close', function(event){
     event.stopPropagation();
     var id = $(this).parent().attr('alt');
-    var dir = Workspace.searchEditor('id',id).dir;
+    var dir = Workspace.searchEditor('id',id).directory;
     Workspace.deleteEditor(id, dir);
-    Workspace.saveTabs();
+    Workspace.saveWs();
 });
 
 $(document).ready(function() {
@@ -394,7 +431,7 @@ $(document).ready(function() {
 		helper : 'clone',
         items: 'div.tab',
         stop: function(){
-            Workspace.saveTabs();
+            Workspace.saveWs();
         }
 	});
     $( "#sortable" ).disableSelection();

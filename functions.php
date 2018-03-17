@@ -2,10 +2,8 @@
 error_reporting(E_PARSE);
 
 function check($var) {
-    if(isset($var)) {
-        if(!empty($var)) {
-            return true;
-        }
+    if(isset($var) and !empty($var)) {
+        return true;
     }
     return false;
 }
@@ -15,7 +13,7 @@ function sec($var) {
 }
 
 
-function redirect($location) {
+function redirect($location, $extension) {
     if(!empty($location)) {
         switch ($location) {
             case 'login':
@@ -24,11 +22,15 @@ function redirect($location) {
                 header("Location: http://$host$uri/");
                 break;
             case 'this':
-                header('Location: http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+                $location = 'Location: http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+                if(isset($extension)) {
+                    $location += sec($extension);
+                }
+                header($location);
                 break;
-            case 'editor':
-                header('Location: editor.php');
-                break;
+                case 'editor':
+                    header('Location: http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . 'editor.php');
+                    break;
         }
         exit();
     }

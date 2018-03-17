@@ -43,7 +43,7 @@ if($modify) {
 
     if(check($_POST)) {
         if(check($_POST['password'])) {
-            $password = md5($_POST['password']);
+            $password = md5(sec($_POST['password']));
             if($password == $file) {
                 $_SESSION['session'] = $password;
                 redirect('editor');

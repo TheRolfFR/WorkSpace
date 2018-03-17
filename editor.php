@@ -4,7 +4,7 @@
         redirect('login');
     } else {
         if(check($_POST)) {
-            if(isset($_POST['disconnect'])) {
+            if(isset($_POST['logout'])) {
                 session_destroy();
                 redirect('login');
             }
@@ -14,7 +14,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <?php $nostyle = ""; $title = "WorkSpace"; require_once('include/head.php'); ?>
+        <?php $title = "WorkSpace"; require_once('include/head.php'); ?>
         <link rel="stylesheet" href="css/style.css">
         
         <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
@@ -47,12 +47,14 @@
             <div id="w_logo" class="middle">
                 <img src="img/workspace_logo_no_bg_white.png" alt=""><h3>Workspace</h3>
             </div><div id="e_tabs" class="middle">
-            </div><form action="" id="logout" method="post" class="middle">
-                <label for="disconnect" class="middle pointer">
-                    Logout 
-                    <i class="fa fa-sign-out" aria-hidden="true"></i><span class="taille"></span>
-                </label><input type="submit" value="" id="disconnect" class="none" name="disconnect">
-            </form>
+            </div>
+            <div id="rightpart" class="middle">
+                <a href="settings.php">
+                    <i class="fa fa-cog" aria-hidden="true"></i>
+                </a><form action="" method="post">
+                    <i class="fa fa-power-off" title="Logout" aria-hidden="true"></i><input type="submit" value="" id="logout" class="" name="logout">
+                </form><span class="taille"></span>
+            </div>
         </div>
 
         <div id="main">

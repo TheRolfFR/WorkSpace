@@ -2,7 +2,7 @@
 include('verifco.php');
 
 if(connected() and check($_GET)) {
-    $file = $_SERVER['DOCUMENT_ROOT'] . sec($_GET['filename']);
+    $file = '..' . sec($_GET['filename']);
     //
     //$file =  '/photo.jpg';
     if (file_exists($file)) {

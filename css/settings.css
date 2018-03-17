@@ -1,0 +1,113 @@
+body {
+	background: #333333;
+	color: white;
+	padding: 10px;
+	text-align: center;
+}
+#settings {
+	width: 400px;
+	max-width: 100%;
+	text-align: left;
+	margin: 20px auto;
+ border-radius: 30px;
+-moz-border-radius: 30px;
+-webkit-border-radius: 30px;
+-webkit-box-shadow: 0px 0px 8px 0px #252525;
+-moz-box-shadow: 0px 0px 8px 0px #252525;
+-o-box-shadow: 0px 0px 8px 0px #252525;
+box-shadow: 0px 0px 8px 0px #252525;
+filter:progid:DXImageTransform.Microsoft.Shadow(color=#252525, Direction=0, Strength=8);
+	padding: 20px;
+}
+#settings .message:not(:empty) {
+	margin: -20px -20px 20px;
+	padding: 15px 20px;
+	overflow: hidden;
+	 border-radius: 30px 30px 0px 0px;
+-moz-border-radius: 30px 30px 0px 0px;
+-webkit-border-radius: 30px 30px 0px 0px;
+}
+#settings .message.saved {
+	background: #388E3C;
+}
+#settings .message.error {
+	background: #B71C1C;
+}
+#settings #top img {
+	height: 50px;
+	margin-right: 12px;
+}
+#settings #top span {
+	font-size: 1.4em;
+}
+#main .title {
+	margin: 20px 0;
+	font-size: 1.5em;
+}
+#main form label {
+	color: #ccc;
+	text-transform: uppercase;
+	font-size: .8em;
+	display: block;
+	margin: 7px 0;
+}
+#main form input {
+	width: 100%;
+	padding: 6px;
+	background-color: #ccc;
+	border: 0px none;
+	border-radius: 4px;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	color: #252525;
+	display: block;
+}
+#main form hr {
+	margin: 15px 0;
+	border-style: solid;
+	border-color: #252525;
+}
+#main form #return {
+	display: block;
+	text-align: right;
+	margin: 20px 0 0;
+	padding: 0;
+	font-size: .8em;
+}
+#main form #return span:hover {
+	text-decoration: underline;
+}
+#main form #submit {
+	background: #0094D2;
+	border-radius: 0px;
+	-moz-border-radius: 0px;
+	-webkit-border-radius: 0px;
+	color: white;
+	margin: 4px 0 0;
+	border-bottom: 4px solid rgba(0, 0, 0, .3);
+}
+#main form #submit:focus {
+	margin-top: 8px;
+	border-bottom: 0px;
+}
+@media screen and (max-width: 1020px) {
+	#settings {
+		margin: 0;
+	}
+	#main form input, #main form #submit, #main form hr {
+		width: 100%;
+	}
+	#return {
+		display: block;
+		text-align: right;
+		margin: 20px 0 0;
+		padding: 0;
+		border: 0px none;
+	}
+	#main form #submit {
+		margin: 4px 0 0;
+	}
+	#main form #submit:focus {
+		margin: 8px 0 0;
+	}
+}

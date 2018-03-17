@@ -253,8 +253,13 @@ var wsmini = new Object({
     // redirect to download.php to download a file
     downloadfile: function() {
         var src = custoMenu.getData('data-src');
-        // $('<a href="/download.php?filename=' + src + '"></a>').appendTo('body').trigger('click');
         $('<form target="_blank" action="download.php" method="get"><input type="hidden" name="filename" value="' + src + '"></form>').appendTo('body').submit().remove();
+    },
+    
+    // redirect to download a folder
+    downloadfolder: function() {
+        var src = custoMenu.getData('data-src');
+        $('<form target="_blank" action="download_folder.php" method="get"><input type="hidden" name="folder" value="' + src + '"></form>').appendTo('body').submit().remove();
     },
     
     // copy into user clipoard the url of file / folder
@@ -356,6 +361,11 @@ var foldermenu = {
 			text: '<i class="fa fa-folder-o" aria-hidden="true"></i> New folder',
 			desc: 'New folder',
 			func: wsmini.newfolder
+		},
+		'downloadfolder' :  {
+		    text : '<i class="fa fa-download" aria-hidden="true"></i> Download folder',
+		    desc: 'Download folder',
+		    func: wsmini.downloadfolder
 		},
 		'copyurl': {
   		    text: '<i class="fa fa-link" aria-hidden="true"></i> Copy url',
