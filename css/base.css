@@ -140,7 +140,7 @@ table
 	font-color: #ccc;
 	font-style: italic;
 }
-input.nostyle {
+input.nostyle, button.nostyle, textarea.nostyle {
 	border: 0;
 	padding: 0;
 	background: transparent;

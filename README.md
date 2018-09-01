@@ -6,23 +6,6 @@
 	<p> Tool to code your website in your website </p>
 </div>
 
-## Features
-
-- Modify, create, delete, manage, upload and download your files
-- Rename, create, delete, and download your folders
-- A real multi-file editor with highligting (uses <a href="https://ace.c9.io/">Ace</a>)
-- Live preview
-
-## Shortcuts
-Some classic shortcuts are not availible because they are part of the browser
-
-|Action|Command|
-|--|--|
-|Save file|Ctrl + s |
-|Close file|Shift + w|
-|Switch to tab #(number) | Alt + Shift + (number)|
-|Switch to previous tab | Shift + )
-|Switch to next tab | Shift + =
 
 ## Installation
 ### 1. Unzip WorkSpace in your hosting

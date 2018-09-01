@@ -145,7 +145,7 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=#343434, Direction=NaN, St
     width: 90px;
     z-index: 5;
 }
-#w_topbar #rightpart > * {
+#w_topbar #rightpart form {
     width: 50%;
     height: 100%;
 }

@@ -17,10 +17,10 @@
         <?php $title = "WorkSpace"; require_once('include/head.php'); ?>
         <link rel="stylesheet" href="css/style.css">
         
-        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="js/jquery-ui.min.js"></script>
+        <link rel="stylesheet" href="css/jquery-ui.css">
 
-        <script src="https://cloud9ide.github.io/emmet-core/emmet.js"></script>
+        <script src="js/emmet.js"></script>
         
         <link  href="https://rawgit.com/TheRolfFR/custoMenu/master/custoMenu.css" rel="stylesheet">
         <script src="https://rawgit.com/TheRolfFR/custoMenu/master/custoMenu.js"></script>
@@ -30,9 +30,9 @@
         <script src="js/ws_mini_explorer.js"></script>
         
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.9/ace.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.9/ext-language_tools.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.9/ext-emmet.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ace.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-language_tools.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-emmet.js"></script>
         
         <script src="js/workspace.js"></script>
         

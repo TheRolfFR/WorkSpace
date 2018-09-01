@@ -23,7 +23,8 @@ function iframeload() {
     var src = input.val();
     if(src.trim() !== '') {
         iframe.attr('src','');
-        iframe.attr('src', src + '?var=' + randint());
+        var separator = (src.match(/\?/)) ? '&' : '?';
+        iframe.attr('src', src + separator + 'var=' + randint());
     }
 }
 
@@ -54,7 +55,7 @@ function openFile(directory, cursor = "") {
                         'directory': directory,
                         'content': data[1]
                     };
-                    if(cursor != "") {
+                    if(cursor !== "") {
                         array.cursor = cursor;
                     }
                     Workspace.addEditor(array);
@@ -97,9 +98,17 @@ function save(dir, content) {
                 iframeload();
             } else {
                 miniNotif.addNotif(1, data, icon, 'red');
+                if(data == 'not connected') {
+                    redirectToLogin();
+                }
             }
         });
     }
+}
+function redirectToLogin() {
+    var url = window.location.href.split('/')
+    url.pop()
+    window.location.href = url.join('/') + '/'
 }
 
 var Workspace = {
@@ -172,6 +181,9 @@ var Workspace = {
         $.get("savetabs.php", { "json": json}, function(data) {
             if(data != 'done') {
                 miniNotif.addNotif(1, data, '<i class="material-icons">&#xE5CD;</i>', 'red');
+                if(data == 'not connected') {
+                    redirectToLogin();
+                }
             }
         });
     },
@@ -196,7 +208,7 @@ var Workspace = {
                 filename: filename,
                 name: "editor" + this.lastid,
                 saved: true
-            }
+            };
             
             // add a new pre (before editor)
             $(this.editors_element).append('<pre id="' + object.name + '" class="editor"></pre>');
@@ -210,7 +222,7 @@ var Workspace = {
             e.$blockScrolling = Infinity;
             
             //Set content
-            e.setValue(array['content']);
+            e.setValue(array['content'], -1);
             
             // set style
             e.setTheme("ace/theme/monokai");
@@ -221,7 +233,7 @@ var Workspace = {
                 name: "save",
                 bindKey: { win: "ctrl-s", mac: "cmd-s" },
                 exec: function (e) {
-                    save(array['directory'], e.getValue());
+                    save(array.directory, e.getValue());
                     object.saved = true;
                     Workspace.switchClassSaved(1, '.tab.' + object.id);
                     Workspace.saveWs();
@@ -238,6 +250,8 @@ var Workspace = {
             //set type
             if (extension == 'js') {
                 extension = 'javascript';
+            } else if(extension == 'md') {
+                extension = 'markdown';
             }
             e.session.setMode("ace/mode/" + extension);
         
@@ -385,7 +399,7 @@ $(document).on('click', '.tab', function(){
     Workspace.switchEditor(id);
 });
 
-//how to switch beetween tabs with shift and numbers
+//how to switch beetween tabs with alt + shift + numbers
 $(document).on('keydown', function(e) {
     // if is a top digit
     var number = (e.which > 48) && (e.which < 58);
@@ -431,6 +445,9 @@ $(document).ready(function() {
     		var nextElement = ui.element.next();
     		nextElement.css('height', nextSize);
     		
+    		// saves size
+            Workspace.saveWs();
+    
     		// solve bug ace editor to resize to content height
     		window.dispatchEvent(new Event('resize'));
     	}

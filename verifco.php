@@ -3,7 +3,7 @@
     require('functions.php');
 
     function connected() {
-        if(isset($_SESSION['session']) and !empty($_SESSION['session'])) {
+        if(isset($_SESSION['atom']) and !empty($_SESSION['atom'])) {
             return true;
         }
         return false;

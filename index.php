@@ -45,7 +45,7 @@ if($modify) {
         if(check($_POST['password'])) {
             $password = md5(sec($_POST['password']));
             if($password == $file) {
-                $_SESSION['session'] = $password;
+                $_SESSION['workspace'] = 'I love WorkSpace';
                 redirect('editor');
             }
         }
@@ -70,7 +70,7 @@ if($modify) {
     		<form action="" method="post">
     			<h3 class="middle" id="title">
     				<img src="img/workspace_logo_no_bg_white.png" alt="WS"><span>WorkSpace</span>
-    			</h3>
+    			</h3><p>Created by <a href="http://bit.ly/therolf-github" style="text-decoration: underline" target="_blank">TheRolf</a></p>
                 <?= $form; ?>
     			<input value="Connect" class="submit" type="submit">
     		</form>
