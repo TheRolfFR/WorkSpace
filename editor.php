@@ -15,66 +15,72 @@
 <html>
     <head>
         <?php $title = "WorkSpace"; require_once('include/head.php'); ?>
+        <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" >
+        <meta name="theme-color" content="#1b1c18">
+        <meta http-equiv="cache-control" content="no-cache" />
         <link rel="stylesheet" href="css/style.css">
         
-        <script src="js/jquery-ui.min.js"></script>
-        <link rel="stylesheet" href="css/jquery-ui.css">
-
-        <script src="js/emmet.js"></script>
-        
-        <link  href="https://rawgit.com/TheRolfFR/custoMenu/master/custoMenu.css" rel="stylesheet">
-        <script src="https://rawgit.com/TheRolfFR/custoMenu/master/custoMenu.js"></script>
-        <script src="https://rawgit.com/TheRolfFR/miniNotif/master/miniNotif.js"></script>
-        <link  href="https://rawgit.com/TheRolfFR/miniNotif/master/miniNotif.css" rel="stylesheet" />
-        
-        <script src="js/ws_mini_explorer.js"></script>
-        
-
+        <!-- Ace Editor !-->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ace.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-language_tools.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-emmet.js"></script>
         
-        <script src="js/workspace.js"></script>
+        <!-- Sortable !-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.6.0/Sortable.min.js"></script>
         
-        <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" >
-        <meta name="theme-color" content="#006e9c">
-        <meta http-equiv="cache-control" content="no-cache" />
+        <!-- my js !-->
+        <!-- <script src="js/ws_mini_explorer.js"></script> !-->
+        <script src="js/extensionjs.js"></script>
+        <script src="js/ajax.js"></script>
+        <script src="js/workspace.js"></script>
+        <script src="js/script.js"></script>
     </head>
 
     <body>
-
-        <div id="w_topbar" class="middle">
-            <div id="w_logo" class="middle">
-                <img src="img/workspace_logo_no_bg_white.png" alt=""><h3>Workspace</h3>
-            </div><div id="e_tabs" class="middle">
-            </div>
-            <div id="rightpart" class="middle">
-                <a href="settings.php">
-                    <i class="fa fa-cog" aria-hidden="true"></i>
-                </a><form action="" method="post">
-                    <i class="fa fa-power-off" title="Logout" aria-hidden="true"></i><input type="submit" value="" id="logout" class="" name="logout">
-                </form><span class="taille"></span>
-            </div>
-        </div>
-
-        <div id="main">
-            <div id="top">
-                <div class="top">
-                    <nav id="w_nav" class="noselect"></nav><div id="e_editors">
-                        
-                    </div><div id="note">
-                        Open file in nav menu or create a new file in the explorer with right click > New file
+        <div id="settingspanel" class="middle">
+            <div id="settingsform" class="element middle noselect">
+                <div id="left">
+                    <img src="https://therolf.fr/workspace/img/workspace_logo_no_bg_white.png" alt="WS">
+                </div><div id="right">
+                    <i id="closesettings" class="material-icons">close</i>
+                    <h2>WorkSpace Settings</h2>
+                    <div>
+                        <label id="night" class="bottom">
+                            <h3>Night theme</h3> <i class="material-icons" id="nighticon" alt="0">check_box_outline_blank</i>
+                          </label>
+                        <p>Because night theme is cool.</p>
                     </div>
-                </div>
-            </div><div id="preview">
-            	<form id="urlbar">
-            		<input type="text" name="" id="" placeholder="Preview url here">
-            	</form>
-            	<div id="frame">
-            		<iframe src="/" frameborder="0"></iframe>
+                    <div>
+                        <label for="highlighting"><h3>Highlighting theme</h3></label>
+                        <p>Press Ctrl-, in the editor to show settings menu and change theme.</p>
+                    </div>
+                </div><span class="taille"></span>
+            </div><span class="taille"></span>
+        </div>
+        <div id="main" class="top">
+            <div id="menu">
+            	
+            	<div id="logo" class="middle noselect">
+            		<img src="https://therolf.fr/workspace/img/workspace_logo_no_bg.png" alt="ws"><span>WorkSpace</span>
+            		<div id="closemenu" class="middle"><i id="settings" class="material-icons">settings</i><i id="close" class="material-icons">close</i><span class="taille"></span></div>
             	</div>
+            	
+            	<ul id="openedfiles">
+            		<h3>Opened files</h3>
+            	</ul>
+            	
+            	<ul id="explorer">
+            		<h3>Explorer</h3>
+            	</ul>
+            	
+            </div><div id="rightpart">
+            	
+            	<div id="topbar" class="middle">
+            		<div id="menubar" class="middle"><i class="material-icons">menu</i><span class="taille"></span></div>
+        		</div>
+            	
+            	<div id="editor"></div>
             </div>
         </div>
-
     </body>
 </html>

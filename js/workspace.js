@@ -1,473 +1,361 @@
-/*
-
- uses miniNotif. More at :
- https://github.com/TheRolfFR/miniNotif
- __        __         _     ____                       
- \ \      / /__  _ __| | __/ ___| _ __   __ _  ___ ___ 
-  \ \ /\ / / _ \| '__| |/ /\___ \| '_ \ / _` |/ __/ _ \
-   \ V  V / (_) | |  |   <  ___) | |_) | (_| | (_|  __/
-    \_/\_/ \___/|_|  |_|\_\|____/| .__/ \__,_|\___\___|
-                                 |_|                   
-  
- by TheRolf
- https://github.com/TheRolfFR
- 
-*/
-
-function randint() {
-    return Math.floor(Math.random() * 10000) + 1;  
-}
-function iframeload() {
-    var iframe = $('#preview iframe');
-    var input = $('#urlbar input');
-    var src = input.val();
-    if(src.trim() !== '') {
-        iframe.attr('src','');
-        var separator = (src.match(/\?/)) ? '&' : '?';
-        iframe.attr('src', src + separator + 'var=' + randint());
-    }
-}
-
-function check_required(array,required) {
-    var response = true;
-    for(var i = 0; i < required.length; i++) {
-        if(!(required[i] in array)) { response = false; }
-    }
-    return response;
-}
-
-function openFile(directory, cursor = "") {
-    // look for existing opened editor
-    var existing = Workspace.searchEditor('directory', directory);
-    if(existing !== undefined) {
-        Workspace.switchEditor(existing.id);
-    } else {
-        // grt file content
-        $.get("access.php", { "file": directory }, function(data) {
-            // data protection
-            data = JSON.parse(data);
-            if(typeof data =='object')
-            {
-                if((data[0] == 'text') || (data[0] == 'inode')) {
-                    // add an editor
-                    data[1] = (data.length == 1) ? "": data[1];
-                    var array = {
-                        'directory': directory,
-                        'content': data[1]
-                    };
-                    if(cursor !== "") {
-                        array.cursor = cursor;
-                    }
-                    Workspace.addEditor(array);
-                    return;
-                } else {
-                    // or open a popup
-                    $('<form target="_blank" action="' + directory + '" method="get"></form>').appendTo('body').submit().remove();
+let WorkSpace = {
+    list: {},
+    tabElement: undefined,
+    tabList: undefined,
+    explorer: undefined,
+    editor: undefined,
+    chargedFolders: { "": {}},
+    aceEditor: undefined,
+    maxEditor: 0,
+    
+    init: function(aceEditor) {
+        this.tabElement = document.getElementById('topbar');
+        this.tabList = document.getElementById('openedfiles');
+        this.explorer = document.getElementById('explorer');
+        this.editor = document.getElementById('editor');
+        this.aceEditor = aceEditor
+        
+        this.loadSave();
+    },
+    
+    loadSave: function() {
+        // load saved json
+        let that = this;
+        getJSON('savetabs.json', function(err, response){
+            if(err) { // error , return
+                console.error("error loading savetabs.json : " + err);
+                return;
+            }
+            
+            // else load every file
+            for(let i = 0; i < response.editors.length; i++) {
+                that.loadFile(response.editors[i].directory, response.editors[i].cursor);
+            }
+            
+            // change theme
+            let icon = document.getElementById('nighticon');
+            if(response.darktheme == true) {
+                document.body.classList.add('darktheme');
+                icon.setAttribute('alt', 1);
+                icon.innerHTML = 'check_box';
+            }
+            
+            postRequest('access.php', {loadsave: JSON.stringify(response.explorer) }, function(response, err) {
+                let json;
+                try {
+                    json = JSON.parse(response);
+                } catch(e) {
+                    console.error(e, response);
                     return;
                 }
-            }
-            else
-            {
-                console.log("Error loading the file, data received : ");
-                console.log(data);
-                var icon = '<i class="material-icons">&#xE161;</i>';
-                miniNotif.addNotif(1, "Error loading the file, please check the console", icon, 'red');
-            }
-        });
-    }
-}
-
-// save a file
-function save(dir, content) {
-    if(dir !== '') {
-        var url = window.location.href;
-        var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
-        var finalurl = parent + "save.php";
-    
-        var params = {
-            dir: dir,
-            content: content
-        };
-    
-        $.post(finalurl, params, function(data){
-            
-            var icon = '<i class="material-icons">&#xE161;</i>';
-            if(data == 'done') {
-                miniNotif.addNotif(1, 'Saved', icon, 'white');
                 
-                iframeload();
-            } else {
-                miniNotif.addNotif(1, data, icon, 'red');
-                if(data == 'not connected') {
-                    redirectToLogin();
-                }
-            }
-        });
-    }
-}
-function redirectToLogin() {
-    var url = window.location.href.split('/')
-    url.pop()
-    window.location.href = url.join('/') + '/'
-}
-
-var Workspace = {
-    tabs_element: '#e_tabs',
-    tab_element: '.tab',
-    editors_element: '#e_editors',
-    editor_element: '.editor',
-    
-    //editor list empty
-    list: [],
-    lastid: 0,
-
-    init: function() {
-        $.getJSON("savetabs.json", function( data ) {
-            
-            // editors
-            if(data.hasOwnProperty('editors')) {
-                for(var i = 0; i < data.editors.length; i++) {
-                        var required = ["directory"];
-                        if(check_required(data.editors[i], required)) {
-                            openFile(data.editors[i].directory, data.editors[i].cursor);
-                        }
-                }
-            }
-            
-            // preview
-            if(data.hasOwnProperty('preview')) {
-                var preview = data.preview;
-                $(document).find('#preview').css('height', preview.height);
-                $(document).find('#main #top').css('height', $(document).find('#main #top').innerHeight() - preview.height);
-                $(document).find('#preview input').val(preview.url);
-                $(document).find('#preview #urlbar').submit();
-            }
+                that.setExplorer(explorer, json);
+            });
         });
     },
     
-    // save names of edited files
-    saveWs: function() {
-        var json = {};
+    loadFile: function(directory, cursor = { row: 0, column: 0 }) {
+        let that = this;
+        let filename = directory.split('/').pop();
         
-        // nav
-        json.explorer = {};
-        $(document).find('.folder.charged').each(function(i){
-            json.explorer[i] = $(this).attr('data-src');
-        });
-        
-        // editors
-        json.editors = {};
-        $(document).find(this.tabs_element + ' ' + this.tab_element).each(function(i){
-           var editorId = parseInt($(this).attr('alt')); 
-           var editorIndex = Workspace.searchEditor('id', editorId, true);
-           var editor = Workspace.list[editorIndex];
-           var active = $(this).hasClass('active');
-           
-           json.editors[i] = {
-               directory: editor.directory,
-               filename: editor.filename,
-               cursor: editor.ace_editor.getCursorPosition(),
-               active: active
-           };
-        });
-        
-        // preview
-        json.preview = {
-            "height" : $(document).find('#preview').innerHeight(),
-            "url" : $(document).find('#preview input').val()
+        let id = this.maxEditor;
+        that.list[id] = {
+            directory: directory,
+            EditSession: null,
+            active: false,
+            filename: filename,
+            cursor: cursor
         };
+        this.maxEditor++;
         
-        json = JSON.stringify(json);
-        $.get("savetabs.php", { "json": json}, function(data) {
-            if(data != 'done') {
-                miniNotif.addNotif(1, data, '<i class="material-icons">&#xE5CD;</i>', 'red');
-                if(data == 'not connected') {
-                    redirectToLogin();
+        postRequest('access.php', { file : directory }, function(response, err){
+            if(err) {
+                console.error('error ' + response.status + ' : ', response);
+                delete that.list[id];
+                return;
+            }
+            
+            let json;
+            try {
+                json = JSON.parse(response);
+            } catch(err) {
+                console.error('error ' + response.status + ' : ', response);
+                return;
+            }
+            
+            if(json[0].substr(0,4) == "text" || json[0].substr(0,5) == "inode") {
+                // add content and mime to list
+                
+                let val = json[0].split('/');
+                val = val[val.length -1];
+                that.list[id].mime = val;
+                
+                // set session
+                that.list[id].EditSession = new ace.createEditSession(json[1], "ace/mode/" + val);
+                if(desktop()) {
+                    that.list[id].EditSession.setUseWrapMode(true);
                 }
+                that.list[id].EditSession.setUseWorker(false);
+                
+                that.aceEditor.selection.clearSelection();
+                // activate editor
+                that.addTab(id);
+                that.activeEditor(id);
+                that.saveWS();
+            } else {
+                // or open a popup
+                document.body.innerHTML += '<form target="_blank" action="' + object.directory + '" method="get" id="popup"></form>';
+                document.getElementById('popup').submit();
+                document.getElementById('popup').remove();
             }
         });
     },
 
-    addEditor: function(array) {
+    setExplorer: function(element, json) {
+        element.innerHTML += "<ol>";
+        element = element.querySelector("ol");
         
-        var required = ['directory', 'content'];
-        if(check_required(array, required)) {
-            // get extension and filename
-            var regex = /\/([^\/]*)\.([^\.]+)$/ ;
-            var matches = array['directory'].match(regex);
-            var extension = matches[2];
-            var filename = matches[1] + '.' + matches[2];
-            
-            // add a new tab
-            $(this.tabs_element).append('<div class="' + this.lastid + ' tab middle" alt="' + this.lastid + '"><div class="file ' + extension + '">' + filename + '</div><div class="close"></div><span class="taille"></span></div>');
-            
-            // prepare object
-            var object = {
-                directory: array['directory'],
-                id: this.lastid,
-                filename: filename,
-                name: "editor" + this.lastid,
-                saved: true
-            };
-            
-            // add a new pre (before editor)
-            $(this.editors_element).append('<pre id="' + object.name + '" class="editor"></pre>');
-            
-            // create editor
-            ace.require("ace/ext/language_tools");
-            ace.require("ace/ext/emmet");
-        
-            // ace editor refers to id
-            e = ace.edit(object.name);
-            e.$blockScrolling = Infinity;
-            
-            //Set content
-            e.setValue(array['content'], -1);
-            
-            // set style
-            e.setTheme("ace/theme/monokai");
-            e.setShowPrintMargin(false);
-            
-            // add commands
-            e.commands.addCommand({
-                name: "save",
-                bindKey: { win: "ctrl-s", mac: "cmd-s" },
-                exec: function (e) {
-                    save(array.directory, e.getValue());
-                    object.saved = true;
-                    Workspace.switchClassSaved(1, '.tab.' + object.id);
-                    Workspace.saveWs();
+        let foldername;
+        let currentFolder;
+        let i;
+        for(let key in json.folder) {
+            if(typeof(json.folder[key]) == "string") {
+                element.innerHTML += '<li><a class="folder context custoMe" href="' + key + '" data-name="folder" data-src="' + key + '">' + json.folder[key] + '</a></li>';
+            } else {
+                // display the charged folder
+                foldername = key.split('/');
+                foldername.pop();
+                currentFolder = this.chargedFolders; 
+                i = 0;
+                while(foldername[i] in currentFolder) {
+                    currentFolder = currentFolder[foldername[i]];
+                    i++;
                 }
-            });
-            e.commands.addCommand({
-                name: 'close',
-                bindKey: { win: 'alt-w', mac: 'alt-w' },
-                exec: function (e) {
-                    Workspace.deleteEditor(object.id, array['directory']);
-                }
-            });
-        
-            //set type
-            if (extension == 'js') {
-                extension = 'javascript';
-            } else if(extension == 'md') {
-                extension = 'markdown';
+                foldername = foldername[i];
+                
+                currentFolder[foldername] = {};
+                
+                foldername = key.split('/');
+                element.innerHTML += '<li><a class="folder charged context custoMe" href="' + key + '" data-name="folder" data-src="' + key + '">' + foldername[foldername.length - 2] + '</a></li>';
+                this.setExplorer(element.lastElementChild, json.folder[key]);
             }
-            e.session.setMode("ace/mode/" + extension);
+        }
         
-            // set options
-            e.setOptions({
-                enableBasicAutocompletion: true,
-                enableSnippets: true,
-                enableLiveAutocompletion: false
-            });
-            e.setOption("enableEmmet", true);
-            e.getSession().setUseWrapMode(true);
-        
-            // focus e
-            e.focus();
-        
-            // goto cursor else goto line 1, comumn 0
-            var row = 1;
-            var column = 0;
-            if(array.hasOwnProperty('cursor')) {
-                if(array.cursor.hasOwnProperty('row') && array.cursor.hasOwnProperty('column')) {
-                    row = array.cursor.row;
-                    column = array.cursor.column;
-                }
+        let ext;
+        for(let i = 0; i < json.file.length; i++) {
+            for(let key in json.file[i]) {
+                ext = json.file[i][key].split('.');
+                ext = ext[ext.length-1];
+                element.innerHTML += '<li><a class="file context custoMe ' + ext + '" href="' + key + '" data-name="file" data-src="' + key + '" data-ext="' + ext + '">' + json.file[i][key] + '</a></li>';
             }
-            e.gotoLine(row, column);
-    
-            object.ace_editor = e;
-    
-            this.list.push(object);
-            this.lastid++;
-            
-            e.on('input', function () {
-                object.saved = false;
-                Workspace.saveWs();
-                Workspace.switchClassSaved(0, '.tab.' + object.id);
-            });
-            
-            this.switchEditor(object.id);
-            
-            Workspace.switchClassSaved(1, object.id);
         }
     },
     
-    switchClassSaved: function(addornot, selector) {
-        var element = $(document).find(selector);
-        if(addornot) { element.addClass('saved') } else { element.removeClass('saved') }
+    loadExplorer: function(directory, destination) {
+        var that = this;
+        postRequest('access.php', {loadfolder: directory}, function(response, err){
+            destination.classList.remove('charging');
+            let json;
+            try {
+                json = JSON.parse(response);
+            } catch (e) {
+                console.error(response);
+                return;
+            }
+            destination.classList.add('charged');
+            that.setExplorer(destination.parentElement, json);
+            
+            // add in charged folders
+            let directories = directory.split('/');
+            directories.pop();
+            let currentFolder = that.chargedFolders;
+            let i = 0;
+            while(directories[i] in currentFolder) {
+                currentFolder = currentFolder[directories[i]];
+                i++;
+            }
+            
+            directories = directories[i];
+            
+            currentFolder[directories] = {};
+            that.saveWS();
+        });
     },
-
-    // return object with id
-    searchEditor: function(property, value, getIndex = false) {
-        for(var i = 0; i < this.list.length; i++) {
-            if(this.list[i][property] == value) {
-                if(getIndex) {
-                    return i;
-                } else {
-                    return this.list[i];
-                }
+    
+    addTab: function(id) {
+        const arr = this.list[id].mime.split('/');
+        const mime = arr[arr.length-1];
+        
+        this.tabElement.innerHTML += '<div class="tab middle noselect file '+mime+'" id="tab'+id+'" alt="' + id + '"><span>'+this.list[id].filename+'</span><span class="material-icons">close</span><span class="taille"></span></div>';
+        
+        var that = this;
+        this.tabElement.querySelectorAll('.tab').forEach(function(el){
+            el.addEventListener('click', function(){
+                that.switchTab(this);
+            });
+        });
+        
+        this.tabList.innerHTML += '<li class="file '+mime+'" alt="' + id + '">'+this.list[id].filename+'</li>';
+        this.tabList.querySelectorAll('li').forEach(function(el){
+            el.addEventListener('click', function(){
+                that.switchTab(this);
+            });
+        });
+    },
+    
+    activeEditor: function(id = -1) {
+        if(!isEmptyObject(this.list)) {
+            // select first editor loaded
+            if(id == -1) {
+                id = Object.keys(this.list)[0];
+            }
+            
+            let activeEditor = this.getActiveEditor();
+            if(activeEditor == undefined) {
+                WorkSpace.list[id].active = true;
+                activeEditor = id;
+            }
+            
+            this.editor.style.display = 'block';
+            
+            // switch classes
+            if(document.querySelector('.tab.active'))
+                document.querySelector('.tab.active').classList.remove('active');
+            document.getElementById('tab' + id).classList.add('active');
+            
+            // switch sessions and focus
+            
+            if(id != activeEditor) {
+                this.list[activeEditor].EditSession = this.aceEditor.getSession();
+                this.list[activeEditor].cursor = this.aceEditor.getCursorPosition();
+            }
+            this.aceEditor.setSession(this.list[id].EditSession);
+            
+            // focus and go to line
+            this.aceEditor.gotoLine(this.list[id].cursor.row+1, this.list[id].cursor.column, true);
+            this.aceEditor.renderer.scrollToRow(this.list[id].cursor.row);
+            this.aceEditor.focus();
+            
+            //switch active
+            this.list[activeEditor].active = false;
+            this.list[id].active = true;
+        } else {
+            this.editor.style.display = "none";
+        }
+    },
+    
+    switchTab: function(el) {
+        this.activeEditor(el.getAttribute("alt"));
+    },
+    
+    getActiveEditor: function() {
+        for(let key in this.list) {
+            if(this.list[key].active == true) {
+                return key;
             }
         }
         return undefined;
     },
-
-    // switch tabs
-    switchEditor: function(id = undefined) {
-        if(id === undefined) {
-            if(this.list.length) {
-                id = Workspace.list[0].id;
+    
+    openInExplorer: function(evt) {
+        evt.preventDefault();
+        if(evt.target.classList.contains('file')) {
+            this.loadFile(evt.target.getAttribute('data-src'));
+        } else if(evt.target.classList.contains('folder') && !evt.target.classList.contains('charging')) {
+            if(evt.target.classList.contains('charged')) {
+                
+                // delete from charged folders this folder
+                let directories = evt.target.getAttribute('data-src').split('/');
+                directories.pop();
+                let lastdir = directories.pop();
+                let currentFolder = this.chargedFolders;
+                
+                let i = 0;
+                while(directories[i] in currentFolder) {
+                    currentFolder = currentFolder[directories[i]];
+                    i++;
+                }
+                delete currentFolder[lastdir];
+            
+                // remove class
+                evt.target.classList.remove('charged');
+                // remove list ol
+                evt.target.parentElement.lastElementChild.remove();
+                this.saveWS();
             } else {
-                $('title').text('WorkSpace');
+                // change to charging icon
+                evt.target.classList.add('charging');
+                this.loadExplorer(evt.target.getAttribute('data-src'), evt.target);
+            }
+        }
+    },
+    
+    saveFile: function() {
+        console.log("save");
+        postRequest("save.php", { dir : this.list[this.getActiveEditor()].directory, content: this.list[this.getActiveEditor()].EditSession.getValue() }, function(response, err){
+            if(err) {
+                console.error("error " + err + " : ", response);
                 return;
             }
-        }
-        
-        // tabs
-        $(this.tab_element).removeClass('active');
-        $(this.tab_element + '.' + id).addClass('active');
-
-        // editors
-        $(this.editors_element + ' > .editor').hide();
-        var e = this.searchEditor('id',id);
-        e.ace_editor.focus();
-        
-        // title
-        $('title').text('WorkSpace - ' + e.filename);
-        
-        $('#' + e.name).show();
-        
-        //save tabs
-        Workspace.saveWs();
+            
+            // send good response
+            if(response == 'done') {
+                console.log("file saved");
+            }
+        });
     },
-
-    // delete editor
-    deleteEditor: function(id, dir) {
-        // remove tab
-        $('.tab.' + id).remove();
+    
+    saveWS: function() {
+        // intialize and blacktheme
+        let json = {
+            explorer: {
+                ".." : this.chargedFolders[""]
+            },
+            darktheme : document.getElementById('nighticon').getAttribute('alt') == 1,
+            editors: []
+        };
         
-        //delete localStorage element
-        localStorage.removeItem(dir);
-
-        //remove editor
-        var e = this.searchEditor('id',id);
-        $('#' + e.name).remove();
-
-        //remove list object
-        var i = this.searchEditor('id',id, true);
-        this.list.splice(i, 1);
-
-        //switch to first tab
-        this.switchEditor();
-    }
-}
-
-// how to switch to previous tabs : Shift-)
-$(document).on('keydown', function(e) {
-    if (e.shiftKey && e.which == 169) {
-        e.preventDefault();
-        var active = $('.tab.active');
-        if($('.tab').length > 1) {
-            var index = $('.tab').index(active);
-            if(index > 0) {
-                var prevId = $('.tab.active').prev().attr('alt');
-                Workspace.switchEditor(prevId);
+        // editors
+        if(this.getActiveEditor() != undefined) {
+            this.list[this.getActiveEditor()].cursor = this.aceEditor.getCursorPosition();
+        }
+        for(let key in this.list) {
+            json.editors.push({
+                directory: this.list[key].directory,
+                filename: this.list[key].filename,
+                cursor: this.list[key].cursor
+            });
+        }
+        
+        postRequest("savetabs.php", {json : JSON.stringify(json)}, function(response, err){
+            if(err) {
+                console.error("error " + response.status + " : " + response.responseText);
+                return;
             }
-        }
-    }
-});
-// how to switch  to next tab : Shift-=
-$(document).on('keydown', function(e) {
-    if (e.shiftKey && e.which == 61) {
-        e.preventDefault();
-        var active = $('.tab.active');
-        if($('.tab').length > 1) {
-            var index = $('.tab').index(active);
-            if(index < ($('.tab').length-1)) {
-                var nextId = $('.tab.active').next().attr('alt');
-                Workspace.switchEditor(nextId);
+            
+            if(response == "done") {
+                console.log("successfully saved");
             }
+        });
+    },
+    
+    closeEditor: function(evt) {
+        evt.preventDefault();
+        if(evt.target.classList.contains('material-icons') && evt.target.parentElement.classList.contains('tab')) {
+            // get id
+            let id = evt.target.parentElement.getAttribute('alt');
+            
+            // splice the element in the list
+            delete this.list[id];
+            
+            // try to activate first editor
+            this.activeEditor();
+            
+            // delete the tab
+            evt.target.parentElement.remove();
+            
+            // save ws
+            this.saveWS();
         }
     }
-});
-
-// how to switch between tabs
-$(document).on('click', '.tab', function(){
-    var id = $(this).attr('alt');
-    Workspace.switchEditor(id);
-});
-
-//how to switch beetween tabs with alt + shift + numbers
-$(document).on('keydown', function(e) {
-    // if is a top digit
-    var number = (e.which > 48) && (e.which < 58);
-    if (e.shiftKey && e.altKey && number) {
-        var index = parseInt(String.fromCharCode(e.keyCode));
-        // if number is lower or equal to the number of editors
-        if(index <= Workspace.list.length) {
-            // switch tab
-            var id = Workspace.list[index-1].id; 
-            Workspace.switchEditor(id);
-        } else {
-            if(Workspace.list.length && index==9) {
-                var id = Workspace.list[Workspace.list.length-1].id;
-                Workspace.switchEditor(id);
-            }
-        }
-        return false;
-    }
-});
-
-// how to close a tab
-$(document).on('click', '.tab .close', function(event){
-    event.stopPropagation();
-    var id = $(this).parent().attr('alt');
-    var dir = Workspace.searchEditor('id',id).directory;
-    Workspace.deleteEditor(id, dir);
-    Workspace.saveWs();
-});
-
-$(document).ready(function() {
-    // init editor instance
-    Workspace.init();
-    
-    //init jquery ui
-    $( "#top" ).resizable({
-    	handles: 's',
-    	minHeight: 150,
-    	resize: function(event, ui) {
-    		var parentSize = ui.element.parent().innerHeight();
-    		
-    		var nextSize = parentSize - ui.size.height;
-    		
-    		var nextElement = ui.element.next();
-    		nextElement.css('height', nextSize);
-    		
-    		// saves size
-            Workspace.saveWs();
-    
-    		// solve bug ace editor to resize to content height
-    		window.dispatchEvent(new Event('resize'));
-    	}
-    });
-    
-    //make tabs sortables
-    $( Workspace.tabs_element ).sortable({
-		axis: "x",
-		helper : 'clone',
-        items: 'div.tab',
-        stop: function(){
-            Workspace.saveWs();
-        }
-	});
-    $( "#sortable" ).disableSelection();
-    
-    // update iframe on enter key
-    $('#urlbar').on('submit', function(e) {
-        e.preventDefault();
-        iframeload();
-        Workspace.saveWs();
-    });
-});
+};
