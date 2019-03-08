@@ -5,15 +5,23 @@ function toggleclass(){
 }
 
 function desktop() {
-    return (document.body.offsetWidth >= 1200) ? true : false;
+    return (document.body.offsetWidth >= 1020) ? true : false;
 }
 
-let value, editor, sortable;
+function resize() {
+    const isDesktop = desktop();
+    aceEditor.renderer.setShowGutter(isDesktop);
+    for(let key in WorkSpace.list) {
+        WorkSpace.list[key].EditSession.setUseWrapMode(isDesktop);
+    }
+}
+
+let value, editor, sortable, mcs, edcv, edsh;
 document.addEventListener('DOMContentLoaded', function(){
     
     // intialize the editor
-    ace.require("ace/ext/language_tools");
     ace.require("ace/ext/emmet");
+    ace.require("ace/ext/language_tools");
     aceEditor = ace.edit("editor", {
         showPrintMargin: false,
         enableBasicAutocompletion: true
@@ -25,27 +33,15 @@ document.addEventListener('DOMContentLoaded', function(){
         bindKey: { win: "ctrl-s", mac: "cmd-s" },
         exec: function() { WorkSpace.saveFile() }
     });
-    if(!desktop()) {
-        editor.renderer.setShowGutter(false);
-    }
+    resize();
     
-    // intialize sortable tabs
-    if(desktop) {
-        let el = document.getElementById('topbar');
-        sortable = Sortable.create(el, {
-            fallbackTolerance: 10
+    WorkSpace.init(aceEditor, function(){
+        WorkSpace.explorer.addEventListener('click', function(evt) {
+            evt.preventDefault();
+            WorkSpace.openInExplorer(evt.target);
         });
-    }
+    });
     
-    WorkSpace.init(aceEditor);
-    
-    // commands menu
-    document.getElementById('topbar').addEventListener('click', toggleclass);
-    document.getElementById('close').addEventListener('click', toggleclass);
-    
-    // commands settings menu
-    document.getElementById('settings').addEventListener('click', menu);
-    document.getElementById('closesettings').addEventListener('click', menu);
     function menu() {
         document.body.classList.toggle('blurred');
         let div = document.getElementById('settingspanel');
@@ -63,19 +59,27 @@ document.addEventListener('DOMContentLoaded', function(){
         let icon = document.getElementById('nighticon');
         if(icon.getAttribute('alt') == 0) {
             icon.innerHTML = 'check_box';
+            if(aceEditor.getTheme() == "ace/theme/kuroir") {
+                aceEditor.setTheme("ace/theme/pastel_on_dark");
+            }
         } else {
             icon.innerHTML = 'check_box_outline_blank';
+            if(aceEditor.getTheme() == "ace/theme/pastel_on_dark") {
+                aceEditor.setTheme("ace/theme/kuroir");
+            }
         }
         document.body.classList.toggle('darktheme');
         icon.setAttribute('alt', 1 - icon.getAttribute('alt'));
         WorkSpace.saveWS();
     });
+
+    // custom context menu
+    custoMenu.addMenu(filectxmenu);
+    custoMenu.addMenu(contentmenu);
+    custoMenu.addMenu(foldermenu);
     
-    // workspace delegated commands
-    WorkSpace.explorer.addEventListener('click', function(evt) {
-        WorkSpace.openInExplorer(evt);
-    });
-    WorkSpace.tabElement.addEventListener('click', function(evt) {
-        WorkSpace.closeEditor(evt);
-    });
-});
+    // initialize notifications
+    miniNotif.init();
+    
+    window.addEventListener("resize", resize);
+}, false);

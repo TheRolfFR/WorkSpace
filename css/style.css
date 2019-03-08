@@ -1,13 +1,16 @@
-body {
-	background: #272822;
+html {
+    overflow: hidden;
 }
-body #main {
+body {
+	background: #2c2828;
+}
+body #main, .application--wrap, #app {
     height: 100%;
 }
 #rightpart {
 	position: relative;
-	padding: 4em 0 0;
 	height: 100%;
+	width: 100%;
 }
 #topbar {
 	position: absolute;
@@ -25,6 +28,9 @@ body #main {
 box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.3);
 filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction=0, Strength=3);
 }
+#topbar .application--wrap {
+    min-height: auto;
+}
 #menubar {
 	height: 3.9em;
 	width: 4em;
@@ -35,30 +41,26 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
 #menubar i {
 	font-size: 1.5em;
 }
-#topbar .tab {
-	height: 100%;
-}
-#topbar .tab::before {
-	height: 2em;
-	width: 2em;
-	display: inline-block;
-	vertical-align: middle;
-}
-#topbar .tab .material-icons {
-	display: none;
-}
-#topbar .tab {
-	display: none;
-}
-#topbar .tab.active {
-	display: inline-block;
-}
-#topbar .tab span {
-	font-weight: 600;
+.v-toolbar {
+    z-index: 100;
 }
 #editor {
-	height: 100%;
+	position: fixed;
+	top: 48px;
+	bottom: 0;
+	right: 0;
+	width: 100%;
 	display: none;
+	transition: all .2s cubic-bezier(.4,0,.2,1);
+}
+#editor .ps__rail-x:hover, #editor .ps__rail-y:hover {
+    background-color: transparent;
+}
+#editor .ps__rail-x:hover > .ps__thumb-x, #editor .ps__rail-x:focus > .ps__thumb-x, #editor .ps__rail-x.ps--clicking .ps__thumb-x {
+    height: 6px;
+}
+#editor .ps__rail-y:hover > .ps__thumb-y, #editor .ps__rail-y:focus > .ps__thumb-y, #editor .ps__rail-y.ps--clicking .ps__thumb-y {
+    width: 6px;
 }
 #menu {
 	width: 100%;
@@ -71,7 +73,7 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
 	overflow: auto;
 	color: #333;
 	padding-top: 4em;
-	transition: all .2s;
+	transition: left .2s;
 }
 #menu.active, #menu.active:after {
 	left: 0;
@@ -118,10 +120,35 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
 	top: 0;
 	bottom: 0;
 }
+#menucontent {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+#workspace {
+    height: 48px;
+    padding: 8px 0;
+    color: #0060ac;
+    font-weight: 500;
+}
+#workspace img {
+    margin: 0 8px;
+}
+#explorer {
+    padding: 8px 0;
+    overflow: auto;
+    height: auto;
+}
 #explorer li a {
-    padding: 1px 0 1px .25em;
+    padding: 1px 0;
 	width: 100%;
 	display: block;
+}
+#explorer ol, #list {
+    padding-left: 8px;
+}
+#drawer h3 {
+    margin: 0 8px 8px;
 }
 #explorer ol ol {
     margin-left: .25em;
@@ -146,6 +173,16 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
     content: "\f110";
     -webkit-animation: fa-spin 1s infinite steps(8);
     animation: fa-spin 1s infinite steps(8);
+}
+#drawer {
+    z-index: 11;
+}
+.toolbar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 10;
 }
 @-webkit-keyframes fa-spin {
   0% {
@@ -210,18 +247,6 @@ body > script {
 	display: none;
 }
 
-body.darktheme #menu, body.darktheme #topbar, body.darktheme #settingsform #right {
-    background: #333;
-    color: white;
-}
-body.darktheme #settingsform h2, body.darktheme #settingsform h3 {
-    color: white;
-}
-body.darktheme #explorer ol ol {
-    border-color: white;
-}
-
-
 #settingspanel {
     position: fixed;
     top: 0;
@@ -275,64 +300,23 @@ body.blurred #settingspanel + * {
 	cursor: pointer;
 }
 
-@media screen and (min-width: 1020px) {
-	#menu {
-		position: relative;
-		top: 0;
-		left: 0;
-		right: auto;
-		width: 13%;
-		min-width: 220px;
-		height: 100%;
-		padding: 2em 0 0;
-	}
-	#menu #explorer {
-	    height: 100%;
-	    overflow: auto;
-	}
-	#menu #logo {
-		height: 2em;
-		padding: .3em .6em;
-	}
-	#menu #logo #closemenu {
-	    padding: 0;
-	}
-	#menu #logo > span {
-	    margin-left: .6em;
-	    font-size: 1em;
-	}
-	#rightpart {
-	    padding-top: 2em;
-		width: 87%;
-		max-width: calc(100% - 220px);
-	}
-	#openedfiles, #menu ul h3, #topbar #menubar, #menu #closemenu #close {
-		display: none;
-	}
-	#topbar {
-	    height: 2em;
-		padding-left: 0px;
-		padding-right: 24px;
-		-webkit-box-shadow: 0px 0px 0px 0px #000000;
--moz-box-shadow: 0px 0px 0px 0px #000000;
--o-box-shadow: 0px 0px 0px 0px #000000;
-box-shadow: 0px 0px 0px 0px #000000;
-filter:progid:DXImageTransform.Microsoft.Shadow(color=#000000, Direction=0, Strength=0);
-	}
-	#topbar .tab {
-		padding: 0;
-		border-bottom: 2px solid transparent;
-		display: inline-block;
-		font-size: .8em;
-	}
-	#topbar .tab .material-icons {
-		font-size: 1em;
-		margin-left: .3em;
-		cursor: pointer;
-		display: inline-block;
-		padding: 0 .4em;
-	}
-	.tab.active {
-		border-bottom: 2px solid #8BC34A !important;
-	}
+#app .v-tabs__div {
+    text-transform: unset;
+}
+
+#app .v-toolbar__title {
+    font-size: 14px;
+}
+#app .v-toolbar__title:not(:first-child) {
+    margin-left: 8px;
+}
+.toolbar a {
+    color: white;
+}
+#explorer.desktop {
+    height: calc(100% - 48px);
+}
+
+#editor.desktop {
+    width: calc(100% - 300px);
 }
