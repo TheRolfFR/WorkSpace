@@ -1,7 +1,7 @@
 <?php 
     require('verifco.php');
     if(!connected()) {
-        //redirect('login');
+        redirect('login');
     } else {
         if(check($_GET)) {
             if(isset($_GET['logout'])) {
@@ -16,7 +16,7 @@
     <head>
         <?php $title = "WorkSpace"; require_once('include/head.php'); ?>
         <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" >
-        <meta name="theme-color" content="#1b1c18">
+        <meta name="theme-color" content="#0060ac">
         
         <!-- Ace Editor : text editor !-->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ace.js"></script>
@@ -51,27 +51,32 @@
     </head>
 
     <body>
-        <v-app id="app">
+        <v-app id="app" :dark="settings.nightTheme">
+            
+            <!-- settings modal -->
             <v-layout row justify-center>
-                <v-dialog v-model="settingsDialog" max-width="400px">
+                <v-dialog v-model="settings.dialog" max-width="600px">
                   <v-card>
                     <v-card-title>
                         <span class="headline">Settings</span>
+                        <v-spacer></v-spacer>
+                        <v-icon v-on:click="settings.dialog = false">close</v-icon>
                     </v-card-title>
                     
-                    <v-list-tile avatar>
-                        <v-list-tile-action>
-                            <v-checkbox :color="colorTheme" v-model="nightTheme"></v-checkbox>
-                        </v-list-tile-action>
-                        
-                        <v-list-tile-content>
-                            <v-list-tile-title>Night theme</v-list-tile-title>
-                            <v-list-tile-sub-title>Enable night theme not to burn your eyes</v-list-tile-sub-title>
-                        </v-list-tile-content>
-                    </v-list-tile>
-                    <v-divider></v-divider>
+                    <v-subheader>Editor settings</v-subheader>
                     
                     <v-list>
+                        <v-list-tile avatar>
+                            <v-list-tile-content>
+                                <v-list-tile-title>Night theme</v-list-tile-title>
+                                <v-list-tile-sub-title>Enable night theme not to burn your eyes</v-list-tile-sub-title>
+                            </v-list-tile-content>
+                            
+                            <v-list-tile-action>
+                                <v-checkbox :color="colorTheme" v-model="settings.nightTheme"></v-checkbox>
+                            </v-list-tile-action>
+                        </v-list-tile>
+                        
                         <v-list-tile>
                             <v-list-tile-content>
                                 <v-list-tile-title>Highlighting theme</v-list-tile-title>
@@ -79,9 +84,105 @@
                             </v-list-tile-content>
                         </v-list-tile>
                     </v-list>
+                    
+                    <v-subheader>Version</v-subheader>
+                    
+                    <v-list>
+                        <v-list-tile>
+                            <v-list-tile-content>
+                                <v-list-tile-title>My version of Workspace</v-list-tile-title>
+                                <v-list-tile-sub-title>{{ settings.version }}{{ (settings.version >= settings.onlineversion) ? ' up-to-date' : '' }}</v-list-tile-sub-title>
+                            </v-list-tile-content>
+                        </v-list-tile>
+                        
+                        <v-card-actions>
+                            <v-btn block color="grey darken-4" dark>{{ (settings.version >= settings.onlineversion) ? 'View' : 'Update ' + settings.onlineversion + ' available' }} on GitHub <i class="fab fa-github-alt" aria-hidden="true"></i></v-btn>
+                        </v-card-actions>
+                    </v-list>
+                    
+                    <v-divider></v-divider>
+                    
+                    <v-subheader>Change password</v-subheader>
+                    
+                    <v-card-text>
+                        <v-form ref="passwordform" lazy-validation>
+                            <v-text-field
+                              label="Current password"
+                              :rules="settings.rules.password"
+                              required
+                              type="password"
+                            ></v-text-field>
+                            
+                            <v-text-field
+                              label="New password"
+                              :rules="settings.rules.password"
+                              required
+                              type="password"
+                            ></v-text-field>
+                            
+                            <v-text-field
+                              label="Confirm new password"
+                              :rules="settings.rules.password"
+                              required
+                              type="password"
+                            ></v-text-field>
+                        </v-form>
+                    </v-card-text>
+                    
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn flat @click="settingsDialog = false">Save password</v-btn>
+                    </v-card-actions>
                   </v-card>
                 </v-dialog>
-              </v-layout>
+                
+                <!-- prompt modal -->
+                <v-dialog v-model="prompt.see" persistent max-width="600px">
+                    <v-card>
+                        <v-card-title>
+                            <span class="headline">{{ prompt.text }}</span>
+                        </v-card-title>
+                        
+                        <v-card-text>
+                            <v-form>
+                                <v-text-field
+                                    label="Name"
+                                    v-model="prompt.value"
+                                    required 
+                                    v-on:keydown.enter.prevent="prompt.callback(prompt.value)"
+                                    autofocus
+                                    v-if="prompt.see"
+                                ></v-text-field>
+                            </v-form>
+                        </v-card-text>
+                            
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn flat @click="prompt.see = false">Cancel</v-btn>
+                            <v-btn flat @click="prompt.callback(prompt.value)">{{ prompt.submitText }}</v-btn>
+                        </v-card-actions>
+                  </v-card>
+                </v-dialog>
+                
+                <!-- confirm modal -->
+                <v-dialog v-model="confirm.see" persistent max-width="600px">
+                    <v-card>
+                        <v-card-title>
+                            <h3 class="headline">{{ confirm.title }}</h3>
+                        </v-card-title>
+                        
+                        <v-card-text>
+                            {{ confirm.text }}
+                        </v-card-text>
+                        
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn flat @click="confirm.cbk(false)">Cancel</v-btn>
+                            <v-btn flat @click="confirm.cbk(true)">{{ confirm.submitText }}</v-btn>
+                        </v-card-actions>
+                  </v-card>
+                </v-dialog>
+            </v-layout>
             
             <!-- snackbar -->
             <v-snackbar
@@ -95,16 +196,16 @@
                 Close
               </v-btn>
             </v-snackbar>
-            <v-navigation-drawer :dark="nightTheme" app id="drawer" v-model="drawer" class="elevation-2" fixed>
+            <v-navigation-drawer app id="drawer" v-model="drawer" class="elevation-2" fixed>
                 <div id="workspace" class="middle">
-                    <img src="img/workspace_logo_no_bg.png" alt=" "><span>WorkSpace</span>
+                    <img :src="'img/workspace_logo_no_bg' + ((settings.nightTheme) ? '_white' : '') + '.png'" alt=" "><span>WorkSpace</span>
                 </div>
                 <v-card class="elevation-0 hidden-lg-and-up">
                     <h3>Opened files</h3>
                     
                     <!-- Opened files -->
                     <ul id="list">
-                        <li v-for="item in tabs" :key="item.id" :class="[item.mime, 'file']" v-on:click><a href="editors[i]">{{ item.filename }}</a></li>
+                        <li v-for="(item, index) in editors.list" :key="index" :class="[item.mime, 'file']" v-on:click><a href="#">{{ item.filename }}</a></li>
                     </ul>
                 </v-card>
                 <div id="explorer" :class="{ desktop: $vuetify.breakpoint.lgAndUp }">
@@ -135,11 +236,11 @@
             <!-- Desktop toolbar -->
             <v-toolbar height="48" :color="colorTheme" dark app class="toolbar elevation-2 hidden-md-and-down">
                 <v-tabs dark color="transparent" show-arrows v-on:change="switchEditor">
-                    <v-tabs-slider></v-tabs-slider>
-                    <v-tab v-for="tab in tabs" :key="tab.id" :class="tab.mime" :value="tab.id">{{ tab.filename }}</v-tab>
+                    <v-tabs-slider v-if="editors.list.length > 0"></v-tabs-slider>
+                    <v-tab v-for="(editor, index) in editors.list" :key="editor.index" :class="editor.mime" :value="editor.index" ref="editors[i].tab" @contextmenu.prevent="closeEditor(editor.id)">{{ editor.filename }}</v-tab>
                 </v-tabs>
                 
-        	    <v-btn icon @click="settingsDialog = true">
+        	    <v-btn icon @click="settings.dialog = true">
                     <v-icon>settings</v-icon>
                 </v-btn>
             	
@@ -149,12 +250,12 @@
             </v-toolbar>
             
             <!-- mobile toolbar -->
-        	<v-toolbar height="48" :color="colorTheme" dark tabs class="toolbar elevation-2 hidden-lg-and-up">
+        	<v-toolbar height="48" :color="colorTheme" dark class="toolbar elevation-2 hidden-lg-and-up">
         	    <v-toolbar-side-icon @click="drawer = !drawer"></v-toolbar-side-icon>
         	    <v-toolbar-title>{{ activeEditorName }}</v-toolbar-title>
         	    <v-spacer></v-spacer>
                 
-        	    <v-btn icon @click="settingsDialog = true">
+        	    <v-btn icon @click="settings.dialog = true">
                     <v-icon>settings</v-icon>
                 </v-btn>
             	

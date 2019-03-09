@@ -6,127 +6,209 @@ let WorkSpace = {
     editor: undefined,
     chargedFolders: { "": {}},
     aceEditor: undefined,
+    activeEditor: -1,
     maxEditor: 0,
     vueTabs: undefined,
     
     init: function(aceEditor, callback) {
         this.vueTabs = new Vue({
+            el: '#app',
             data: () => ({
-                tabs: [],
-                activeEditor: 0,
-                editors: [],
                 drawer: false,
                 snackbar: false,
-                snackbarText: "I love you boby",
+                snackbarText: "",
                 color: "#0060ac",
-                settingsDialog: false,
-                nightTheme: false
+                explorer: {},
+                explorerElement: undefined,
+                editors: {
+                    aceEditor: undefined,
+                    element: undefined,
+                    list: [],
+                    activeEditor: -1
+                },
+                prompt: {
+                    see: false,
+                    text: '',
+                    submitText: '',
+                    value: '',
+                    callback: function() {}
+                },
+                confirm: {
+                    see: false,
+                    title: '',
+                    text: '',
+                    cbk: function(value){
+                        this.see = false;
+                        this.callback(value);
+                    },
+                    callback: function() {}
+                },
+                settings: {
+                    dialog: false,
+                    nightTheme: false,
+                    version: '0.0.0',
+                    onlineversion: '0.0.0',
+                    rules: {
+                        password: [v => !!v || 'A value is required']
+                    }
+                }
             }),
-            el: '#app',
+            mounted: function() {
+                console.log('mounted');
+                
+                
+                this.getVersions();
+                Vue.set(this.editors, 'aceEditor', aceEditor);
+                /*
+                Vue.set(this.editors, 'element' ,document.getElementById('editor'));
+                /*
+                Vue.set(this, 'drawer', this.$vuetify.breakpoint.lgAndUp);
+                /*
+                this.explorerElement = document.getElementById('explorer');
+                    
+                    
+                /*this.$nextTick(function() {
+                    this.adjustEditor();
+                    this.loadSave();
+                    callback();
+                  })*/
+            },
             methods: {
                 switchEditor: function(id = -1) {
-                    Vue.set(this, 'activeEditor', id);
-                    WorkSpace.activeEditor(id);
+                    //WorkSpace.activeEditor(id);
                 },
                 logout: function() {
                     window.location.href +="?logout";
+                },
+                adjustEditor: function() {
+                    this.editors.aceEditor.renderer.setShowGutter(this.$vuetify.breakpoint.lgAndUp);
+                    if(this.$vuetify.breakpoint.lgAndUp) {
+                       this.editors.element.classList.add('desktop');
+                    } else {
+                       this.editors.element.classList.remove('desktop');
+                    }
+                },
+                loadSave: function() {
+                    getJSON('savetabs.json', (err, response) => {
+                        if(err) { // error handling
+                            response = {};
+                        }
+                        
+                        // night theme
+                        if('nightTheme' in response && typeof(response.nightTheme) == 'boolean') {
+                            Vue.set(this.settings, 'nightTheme', response.nightTheme);
+                        }
+                        
+                        // keep track of all loaded editors
+                        let loadededitors = []; // used not to reopen a file
+                        /*
+                        if('editors' in response) {
+                            for(let i = 0; i < response.editors.length; i++) {
+                                // load if not loaded
+                                if(loadededitors.indexOf(response.editors[i].directory) == -1) {
+                                    loadededitors.push(response.editors[i].directory);
+                                    Vue.nextTick(function(){
+                                        console.log(response.editors[i].directory, response.editors[i]);
+                                        WorkSpace.loadFile(response.editors[i].directory, i, response.editors[i].cursor, response.editors[i].directory == response.activeEditor);
+                                    })
+                                }
+                            }
+                        }*/
+                        
+                        // explorer part
+                        postRequest('access.php', {loadsave: JSON.stringify(response.explorer) }, (response, err) => {
+                            let json;
+                            try {
+                                json = JSON.parse(response);
+                            } catch(e) {
+                                WorkSpace.handleError(response.responseText);
+                                console.error(e, response);
+                                return;
+                            }
+                            
+                            Vue.set(this, 'explorer', json);
+                            WorkSpace.setExplorer(this.explorerElement, json);
+                            WorkSpace.saveWS();
+                        });
+                    });
+                },
+                closeEditor: function(id) {
+                    const index = this.editors.findIndex(function(editor) { return editor.id == id});
+                    let editors = this.editors;
+                    
+                    editors.splice(index, 1);
+                    
+                    Vue.set(this, 'editors', editors);
+                    WorkSpace.saveWS();
+                },
+                push: function(key, val) {
+                    let arr = this[key];
+                    arr.push(val);
+                    Vue.set(this, key, arr);
+                },
+                update: function(key, val, index = -1) {
+                    if(index == -1) {
+                        let temp = this[key];
+                        for(attribute in val) {
+                            temp[attribute] = val[attribute];
+                        }
+                        this[key] = temp;
+                    } else {
+                        let temp = this[key][index];
+                        for(attribute in val) {
+                            temp[attribute] = val[attribute];
+                        }
+                        this[key][index] = temp;
+                    }
+                },
+                getVersions: function() {
+                    getRequest('version.txt', {}, (data, err) => {
+                        this.settings.version = (err) ? "Unknown version" : data;
+                    })
+                    getRequest('https://raw.githubusercontent.com/TheRolfFR/WorkSpace/master/version.txt', {}, (data, err) => {
+                        this.settings.onlineversion = (err) ? "Unknown version" : data;
+                    })
                 }
             },
             computed: {
                 activeEditorName: function() {
-                    let filtered = this.tabs.filter(tab => tab.id == this.activeEditor);
-                    return (this.tabs.length != 0) ? filtered[0].filename : '';
+                    let filtered = this.editors.list.filter(tab => tab.id == this.editors.activeEditor);
+                    return (this.editors.list.length != 0) ? filtered[0].filename : '';
                 },
                 colorTheme: function() {
-                    return (this.nightTheme) ? "#222" : this.color;
+                    return (this.settings.nightTheme) ? "#222" : this.color;
                 }
             },
-            mounted: function() {
-                this.$nextTick(function() {
-                    this.drawer = this.$vuetify.breakpoint.lgAndUp;
-                    WorkSpace.loadSave(this);
-                    WorkSpace.adjustEditor(this.$vuetify.breakpoint.lgAndUp);
-                    callback();
-                  })
-            },
             watch: {
-               '$vuetify.breakpoint.lgAndUp': function (value) {
-                   WorkSpace.adjustEditor(value);
+               '$vuetify.breakpoint.lgAndUp': function () {
+                   this.adjustEditor();
+               },
+               'settings.nightTheme': function(value) {
+                    if(value) {
+                        if(this.aceEditor.getTheme() == "ace/theme/kuroir") {
+                            this.aceEditor.setTheme("ace/theme/pastel_on_dark");
+                        }
+                    } else {
+                        if(this.aceEditor.getTheme() == "ace/theme/pastel_on_dark") {
+                            this.aceEditor.setTheme("ace/theme/kuroir");
+                        }
+                    }
+               },
+               'editors': {
+                    handler: function (val, oldVal) {
+                        
+                    },
+                    deep: true
                }
             }
         })
     },
     
-    adjustEditor: function(value) {
-        if(value) {
-           this.editor.classList.add('desktop');
-        } else {
-           this.editor.classList.remove('desktop');
-        }
-    },
-    
-    loadSave: function(vue) {
-        this.explorer = document.getElementById('explorer');
-        this.editor = document.getElementById('editor');
-        this.aceEditor = aceEditor;
-        // load saved json
-        let that = this;
-        getJSON('savetabs.json', function(err, response){
-            if(err) { // error , return
-                that.handleError(response.responseText);
-                console.error("error loading savetabs.json : " + err);
-                return;
-            }
-            
-            
-            // change theme
-            let icon = document.getElementById('nighticon');
-            if(response.darktheme == true) {
-                document.body.classList.add('darktheme');
-                icon.setAttribute('alt', 1);
-                icon.innerText = 'check_box';
-                this.aceEditor.setTheme("ace/theme/pastel_on_dark");
-            }
-            
-            // keep track of all loaded editors
-            let loadededitors = vue.editors || [];
-            for(let i = 0; i < response.editors.length; i++) {
-                // load if not loaded
-                if(loadededitors.indexOf(response.editors[i].directory) == -1) {
-                    that.loadFile(response.editors[i].directory, response.editors[i].cursor, response.editors[i].directory == response.activeEditor);
-                    loadededitors.push(response.editors[i].directory);
-                }
-            }
-            Vue.set(vue, 'editors', loadededitors);
-            
-            // explorer part
-            postRequest('access.php', {loadsave: JSON.stringify(response.explorer) }, function(response, err) {
-                let json;
-                try {
-                    json = JSON.parse(response);
-                } catch(e) {
-                    that.handleError(response.responseText);
-                    console.error(e, response);
-                    return;
-                }
-                
-                that.setExplorer(explorer, json);
-                that.saveWS();
-            });
-        });
-    },
-    
-    loadFile: function(directory, cursor = { row: 0, column: 0 }, activeEditor = true) {
+    loadFile: function(directory, index, cursor = { row: 0, column: 0 }, activeEditor = true) {
         let that = this;
         let filename = directory.split('/').pop();
         
         postRequest('access.php', { file : directory }, function(response, err){
-            if(err) {
-                that.handleError(response.responseText);
-                console.error('error ' + response.status + ' : ', response);
-                delete that.list[id];
-                return;
-            }
             
             let json;
             try {
@@ -139,37 +221,17 @@ let WorkSpace = {
             
             if(json[0].substr(0,4) == "text" || json[0].substr(0,5) == "inode") {
                 // add editor to list
-                let id = that.maxEditor;
-                that.list[id] = {
+                const mime = json[0].split('/').pop();
+                
+                WorkSpace.vueTabs.push('editors', {
                     directory: directory,
-                    EditSession: null,
-                    active: false,
+                    EditSession: new ace.createEditSession(json[1], "ace/mode/" + mime),
                     filename: filename,
-                    cursor: cursor
-                };
-                that.maxEditor++;
+                    cursor: cursor,
+                    mime: mime
+                });
                 
-                // add content and mime to list
-                
-                let val = json[0].split('/');
-                val = val[val.length -1];
-                that.list[id].mime = val;
-                
-                // set session
-                that.list[id].EditSession = new ace.createEditSession(json[1], "ace/mode/" + val);
-                if(desktop()) {
-                    that.list[id].EditSession.setUseWrapMode(true);
-                }
-                that.list[id].EditSession.setUseWorker(false);
-                that.aceEditor.selection.clearSelection();
-                
-                // add a tab
-                that.addTab(id);
-                
-                // if activate switch to this tab
-                if(activeEditor) {
-                    //that.activeEditor(id);
-                }
+                that.activeEditor(WorkSpace.vueTabs.editors.length - 1);
                 that.saveWS();
             } else {
                 // or open a popup
@@ -257,63 +319,34 @@ let WorkSpace = {
         });
     },
     
-    addTab: function(id) {
-        var that = this;
-        const arr = this.list[id].mime.split('/');
-        const mime = arr[arr.length-1];
+    activeEditor: function(index) {
+        if(this.vueTabs.editors.length == 0) {
+            this.vueTabs.editor.style.display = "none";
+            return;
+        }
         
-        let tabs = this.vueTabs.tabs || [];
-        tabs.push({
-            mime: mime,
-            id: id,
-            filename: this.list[id].filename
-        })
-        Vue.set(this.vueTabs, 'tabs', tabs);
+        this.vueTabs.editor.style.display = 'block';
+        
+        // previous editor
+        if(this.vueTabs.activeEditor != -1) {
+            this.vueTabs.editors[this.vueTabs.activeEditor].EditSession = this.vueTabs.aceEditor.getSession();
+            this.vueTabs.editors[this.vueTabs.activeEditor].cursor = this.vueTabs.aceEditor.getCursorPosition();
+        }
+        
+        // new editor
+        this.vueTabs.activeEditor = index;
+        
+        /*
+        Vue.nextTick(() => {
+            this.vueTabs.aceEditor.setSession(this.vueTabs.editors[index].EditSession);
+            this.vueTabs.aceEditor.gotoLine(this.vueTabs.editors[index].cursor.row+1, this.vueTabs.editors[index].cursor.column, false);
+            this.vueTabs.aceEditor.scrollToRow(this.vueTabs.editors[index].cursor.row+1);
+            this.vueTabs.aceEditor.focus();
+        })*/
     },
     
-    activeEditor: function(id = -1) {
-        if(!isEmptyObject(this.list)) {
-            // select first editor loaded
-            if(id == -1) {
-                id = Object.keys(this.list)[0];
-            }
-            
-            let activeEditor = this.getActiveEditor();
-            if(activeEditor == undefined) {
-                WorkSpace.list[id].active = true;
-                activeEditor = id;
-            }
-            
-            this.editor.style.display = 'block';
-            
-            // switch sessions and focus
-            
-            if(id != activeEditor) {
-                this.list[activeEditor].EditSession = this.aceEditor.getSession();
-                this.list[activeEditor].cursor = this.aceEditor.getCursorPosition();
-            }
-            this.aceEditor.setSession(this.list[id].EditSession);
-            
-            // focus and go to line
-            this.aceEditor.gotoLine(this.list[id].cursor.row+1, this.list[id].cursor.column, false);
-            this.aceEditor.scrollToRow(this.list[id].cursor.row+1);
-            this.aceEditor.focus();
-            
-            //switch active
-            this.list[activeEditor].active = false;
-            this.list[id].active = true;
-        } else {
-            this.editor.style.display = "none";
-        }
-    },
-    
-    switchTab: function(el) {
-        if(typeof(el) == "object") {
-            this.activeEditor(el.getAttribute("alt"));
-        } else {
-            this.activeEditor(el);
-        }
-        this.saveWS();
+    switchTab: function(index) {
+        this.vueTabs.$refs.tabs[index].$el.click();
     },
     
     getActiveEditor: function() {
@@ -329,15 +362,12 @@ let WorkSpace = {
         if(target.classList.contains('file')) {
             // do not load if alreasy loaded
             const dir = target.getAttribute('data-src');
-            for(let key in this.list) {
-                if(this.list[key].directory == dir) {
-                    this.switchTab(key);
-                    toggleclass();
-                    return;
-                }
+            const index = this.vueTabs.editors.findIndex(function(editor) { return editor.directory == dir});
+            if(index != -1) {
+                this.switchTab(index);
+            } else {
+                this.loadFile(dir);
             }
-            
-            this.loadFile(dir);
         } else if(target.classList.contains('folder') && !target.classList.contains('charging')) {
             if(target.classList.contains('charged')) {
                 
@@ -393,18 +423,30 @@ let WorkSpace = {
         let that = this;
         // intialize and blacktheme
         const activeEditor = (this.getActiveEditor() != undefined) ? this.list[this.getActiveEditor()].directory : '';
+        
+        var savedEditors = [];
+        for(i in this.vueTabs.editors) {
+            savedEditors.push({
+                cursor:  this.vueTabs.editors[i].cursor,
+                directory:  this.vueTabs.editors[i].directory
+            })
+        }
+        console.log(savedEditors);
+        
+        
+        
         let json = {
             explorer: {
                 ".." : this.chargedFolders[""]
             },
-            darktheme : document.getElementById('nighticon').getAttribute('alt') == 1,
-            editors: [],
+            nightTheme : this.vueTabs.settings.nightTheme,
+            editors: savedEditors,
             activeEditor: activeEditor
         };
         
         // editors
         if(this.getActiveEditor() != undefined) {
-            this.list[this.getActiveEditor()].cursor = this.aceEditor.getCursorPosition();
+            this.list[this.getActiveEditor()].cursor = this.vueTabs.aceEditor.getCursorPosition();
         }
         for(let key in this.list) {
             json.editors.push({
@@ -414,6 +456,7 @@ let WorkSpace = {
             });
         }
         
+        console.log(json);
         postRequest("savetabs.php", {json : JSON.stringify(json)}, function(response, err){
             if(err) {
                 that.handleError(response.responseText);
@@ -421,26 +464,6 @@ let WorkSpace = {
                 return;
             }
         });
-    },
-    
-    closeEditor: function(evt) {
-        evt.preventDefault();
-        if(evt.target.classList.contains('material-icons') && evt.target.parentElement.classList.contains('tab')) {
-            // get id
-            let id = evt.target.parentElement.getAttribute('alt');
-            
-            // splice the element in the list
-            delete this.list[id];
-            
-            // try to activate first editor
-            this.activeEditor();
-            
-            // delete the tab
-            evt.target.parentElement.remove();
-            
-            // save ws
-            this.saveWS();
-        }
     },
     
     handleError: function(error) {
@@ -452,7 +475,7 @@ let WorkSpace = {
             console.error(error);
             miniNotif.addNotif({
                 process: false,
-                text: "An error occured, please chack console for more details.",
+                text: "An error occured, please check console for more details.",
                 color: 'red',
                 icon: '<i class="fas fa-exclamation-circle"></i>'
             })

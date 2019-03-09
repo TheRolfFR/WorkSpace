@@ -87,36 +87,45 @@ let WorkSpaceExplorer = new Object({
         let src = custoMenu.getData('data-src');
         let filename = custoMenu.element.innerText;
         
-        const notifobj = {
-            color: this.bluecolor,
-            process: false,
-            text: 'Deleting item',
-            icon: '<i class="fas fa-circle-notch fa-spin"></i>'
-        }
-        const notif = miniNotif.addNotif(notifobj);
+        WorkSpace.vueTabs.update('confirm', {
+            see: true,
+            title: 'Delete file?',
+            text: 'Are you sure to delete ' + filename + '?',
+            submitText: 'Delete',
+            callback: function(value) {
+                if(value) {
         
-        if(confirm('Are you sure to delete ' + filename + ' ?')) {
-            postRequest('action.php', { delete: src }, function(response, err){
-                //hide previous notification
-                miniNotif.done(notif);
-                
-                // handle errors
-                if(err || response != 'done') {
-                    WorkSpace.handleError(response);
-                    return;
+                    const notifobj = {
+                        color: this.bluecolor,
+                        process: false,
+                        text: 'Deleting item',
+                        icon: '<i class="fas fa-circle-notch fa-spin"></i>'
+                    }
+                    const notif = miniNotif.addNotif(notifobj);
+                    
+                    postRequest('action.php', { delete: src }, function(response, err){
+                        //hide previous notification
+                        miniNotif.done(notif);
+                        
+                        // handle errors
+                        if(err || response != 'done') {
+                            WorkSpace.handleError(response);
+                            return;
+                        }
+                        
+                        // display successfull deletion
+                        miniNotif.addNotif({
+                            text: 'Deleted successfully',
+                            icon: '<i class="fas fa-check"></i>',
+                            color: 'green'
+                        });
+                        
+                        // delete it in explorer
+                        custoMenu.element.parentElement.remove();
+                    });
                 }
-                
-                // display successfull deletion
-                miniNotif.addNotif({
-                    text: 'Deleted successfully',
-                    icon: '<i class="fas fa-check"></i>',
-                    color: 'green'
-                });
-                
-                // delete it in explorer
-                custoMenu.element.parentElement.remove();
-            });
-        }
+            }
+        });
     },
     
     copyUrl: function() {
@@ -159,88 +168,107 @@ let WorkSpaceExplorer = new Object({
 	    const src = custoMenu.getData('data-src');
         const name = custoMenu.element.innerText;
         
-		const newname = prompt('Choose new name', name);
-		
-        if(newname !== '') {
-            postRequest('action.php', {'rename' : src, 'newname' : newname}, function(response, err){
-                if(response == 'done') {
-                    custoMenu.element.classList.remove(name.split('.').pop());
-                    const newadress = custoMenu.element.attributes.href.value.replace(name, newname)
-                    custoMenu.element.setAttribute('href', newadress)
-                    custoMenu.element.setAttribute('data-src', newadress)
-                    custoMenu.element.innerText = newname;
-                    
-                    if(newname.indexOf('.') != -1) {
-                        const ext = newname.split('.').pop()
-                        custoMenu.element.classList.add(ext)
-                        custoMenu.element.setAttribute('data-ext', ext)
+        Vue.set(WorkSpace.vueTabs, 'prompt', {
+            see: true,
+            text: 'Choose a new name',
+            value: name,
+            submitText: 'Rename',
+            callback: function(newname) {
+                WorkSpace.vueTabs.prompt.see = false;
+                postRequest('action.php', {'rename' : src, 'newname' : newname}, function(response, err){
+                    if(response == 'done') {
+                        custoMenu.element.classList.remove(name.split('.').pop());
+                        const newadress = custoMenu.element.attributes.href.value.replace(name, newname)
+                        custoMenu.element.setAttribute('href', newadress)
+                        custoMenu.element.setAttribute('data-src', newadress)
+                        custoMenu.element.innerText = newname;
+                        
+                        if(newname.indexOf('.') != -1) {
+                            const ext = newname.split('.').pop()
+                            custoMenu.element.classList.add(ext)
+                            custoMenu.element.setAttribute('data-ext', ext)
+                        }
+                        miniNotif.addNotif({
+                            color: 'green',
+                            text: 'File successfully renamed',
+                            icon: '<i class="fas fa-check"></i>'
+                        })
+                    } else {
+                        console.log(response);
+                        miniNotif.addNotif(1, 'An error occured. More infos in console.' ,'<i class="material-icons">&#xE5CD;</i>',"red");
                     }
-                    miniNotif.addNotif({
-                        color: 'green',
-                        text: 'File successfully renamed',
-                        icon: '<i class="fas fa-check"></i>'
-                    })
-                } else {
-                    console.log(response);
-                    miniNotif.addNotif(1, 'An error occured. More infos in console.' ,'<i class="material-icons">&#xE5CD;</i>',"red");
-                }
-            });
-        }
+                });
+            }
+        });
     },
     
     newFolder: function(){
         const src = custoMenu.getData('data-src');
         
-        const name = prompt('New folder: Choose name');
-        if(name !== '') {
-            postRequest('action.php', {'newfolder' : src, 'name' : name}, function(res, err){
-                if(res == 'done') {
-                    miniNotif.addNotif({
-                        color: 'green',
-                        text: 'Folder successfully created',
-                        icon: '<i class="fas fa-check"></i>'
-                    })
-                } else {
-                    console.log(res, err);
-                    miniNotif.addNotif({
-                        process: false,
-                        color: 'red',
-                        text: 'An error occured. More infos in console.',
-                        icon: '<i class="material-icons">&#xE5CD;</i>',
-                    });
-                }
-            });
-        }
+        WorkSpace.vueTabs.update('prompt', {
+            see: true,
+            text: 'New folder: Choose a name',
+            label: 'Name',
+            value: '',
+            submitText: "Create",
+            callback: function(name) {
+                this.see = false;
+                postRequest('action.php', {'newfolder' : src, 'name' : name}, function(res, err){
+                    if(res == 'done') {
+                        miniNotif.addNotif({
+                            color: 'green',
+                            text: 'Folder successfully created',
+                            icon: '<i class="fas fa-check"></i>'
+                        })
+                    } else {
+                        console.log(res, err);
+                        miniNotif.addNotif({
+                            process: false,
+                            color: 'red',
+                            text: 'An error occured. More infos in console.',
+                            icon: '<i class="material-icons">&#xE5CD;</i>',
+                        });
+                    }
+                });
+            }
+        })
     },
     
     newFile: function(){
         const src = custoMenu.getData('data-src');
         const el = custoMenu.element;
         
-        const name = prompt('New file: Choose name');
-        if(name !== '') {
-            postRequest('action.php', {'newfile' : src, 'name' : name}, function(res, err){
-                if(res == 'done') {
-                    if(el.classList.contains("charged")) {
-                        el.click();
-                        el.click();
+        WorkSpace.vueTabs.update('prompt', {
+            see: true,
+            text: 'New file: Choose a name',
+            label: 'Name',
+            value: '',
+            submitText: "Create",
+            callback: function(name) {
+                this.see = false;
+                postRequest('action.php', {'newfile' : src, 'name' : name}, function(res, err){
+                    if(res == 'done') {
+                        if(el.classList.contains("charged")) {
+                            el.click();
+                            el.click();
+                        }
+                        miniNotif.addNotif({
+                            color: 'green',
+                            text: 'File successfully renamed',
+                            icon: '<i class="fas fa-check"></i>'
+                        })
+                    } else {
+                        console.log(res, err);
+                        miniNotif.addNotif({
+                            process: false,
+                            color: 'red',
+                            text: 'An error occured. More infos in console.',
+                            icon: '<i class="material-icons">&#xE5CD;</i>',
+                        });
                     }
-                    miniNotif.addNotif({
-                        color: 'green',
-                        text: 'File successfully renamed',
-                        icon: '<i class="fas fa-check"></i>'
-                    })
-                } else {
-                    console.log(res, err);
-                    miniNotif.addNotif({
-                        process: false,
-                        color: 'red',
-                        text: 'An error occured. More infos in console.',
-                        icon: '<i class="material-icons">&#xE5CD;</i>',
-                    });
-                }
-            });
-        }
+                });
+            }
+        })
     },
     
     uploadFile: function() {

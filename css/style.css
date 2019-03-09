@@ -152,7 +152,13 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
 }
 #explorer ol ol {
     margin-left: .25em;
-	border-left: 1px solid #333;
+	border-left: 1px solid;
+}
+.theme--dark #explorer *, .theme--dark #drawer img + * {
+    color: white;
+}
+#explorer * {
+    color: #333;
 }
 .file:before, .folder:before {
 	height: 1.5em;
@@ -184,6 +190,10 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
     left: 0;
     z-index: 10;
 }
+.custoMenu {
+    padding: 0;
+    margin: 0;
+}
 @-webkit-keyframes fa-spin {
   0% {
     -webkit-transform: rotate(0deg);
@@ -207,11 +217,14 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
 .file.x-php:before, .file.php:before {
     content: url(../img/icons/php.svg);
 }
-.file.txt:before {
+.file:before, .file.txt:before {
     content: url(../img/icons/default.svg);
 }
 .file.svg:before {
     content: url(../img/icons/svg.svg);
+}
+.file.md:before {
+    content: url(../img/icons/markdown.svg);
 }
 .file.css:before {
     content: url(../img/icons/css.svg);
