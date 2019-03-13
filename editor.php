@@ -96,7 +96,7 @@
                         </v-list-tile>
                         
                         <v-card-actions>
-                            <v-btn block color="grey darken-4" dark>{{ (settings.version >= settings.onlineversion) ? 'View' : 'Update ' + settings.onlineversion + ' available' }} on GitHub <i class="fab fa-github-alt" aria-hidden="true"></i></v-btn>
+                            <v-btn block color="grey darken-4" dark v-on:click="openGithub()">{{ (settings.version >= settings.onlineversion) ? 'View' : 'Update ' + settings.onlineversion + ' available' }} on GitHub <i class="fab fa-github-alt" aria-hidden="true"></i></v-btn>
                         </v-card-actions>
                     </v-list>
                     
@@ -235,12 +235,12 @@
             
             <!-- Desktop toolbar -->
             <v-toolbar height="48" :color="colorTheme" dark app class="toolbar elevation-2 hidden-md-and-down">
-                <v-tabs dark color="transparent" show-arrows v-on:change="switchEditor">
-                    <v-tabs-slider v-if="editors.list.length > 0"></v-tabs-slider>
-                    <v-tab v-for="(editor, index) in editors.list" :key="editor.index" :class="editor.mime" :value="editor.index" ref="editors[i].tab" @contextmenu.prevent="closeEditor(editor.id)">{{ editor.filename }}</v-tab>
+                <v-tabs dark color="transparent" show-arrows>
+                    <v-tabs-slider></v-tabs-slider>
+                    <v-tab ref="tabs" v-for="(editor, index) in editors.list" :key="editor.index" :class="editor.mime" @click="activeEditor(editor.directory)" @contextmenu.prevent="closeEditor(editor.id)">{{ editor.filename }}</v-tab>
                 </v-tabs>
                 
-        	    <v-btn icon @click="settings.dialog = true">
+        	    <v-btn icon @click="openSettings()">
                     <v-icon>settings</v-icon>
                 </v-btn>
             	
@@ -255,7 +255,7 @@
         	    <v-toolbar-title>{{ activeEditorName }}</v-toolbar-title>
         	    <v-spacer></v-spacer>
                 
-        	    <v-btn icon @click="settings.dialog = true">
+        	    <v-btn icon @click="openSettings()">
                     <v-icon>settings</v-icon>
                 </v-btn>
             	

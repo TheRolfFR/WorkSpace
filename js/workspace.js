@@ -45,7 +45,7 @@ let WorkSpace = {
                 },
                 settings: {
                     dialog: false,
-                    nightTheme: false,
+                    nightTheme: true,
                     version: '0.0.0',
                     onlineversion: '0.0.0',
                     rules: {
@@ -54,33 +54,24 @@ let WorkSpace = {
                 }
             }),
             mounted: function() {
-                console.log('mounted');
-                
-                
-                this.getVersions();
-                Vue.set(this.editors, 'aceEditor', aceEditor);
-                /*
-                Vue.set(this.editors, 'element' ,document.getElementById('editor'));
-                /*
-                Vue.set(this, 'drawer', this.$vuetify.breakpoint.lgAndUp);
-                /*
+                // initialize
+                this.editors.aceEditor = aceEditor;
+                this.editors.element = document.getElementById('editor');
                 this.explorerElement = document.getElementById('explorer');
-                    
-                    
-                /*this.$nextTick(function() {
+                this.drawer = this.$vuetify.breakpoint.lgAndUp;
+                this.$nextTick(function(){
                     this.adjustEditor();
                     this.loadSave();
                     callback();
-                  })*/
+                })
             },
             methods: {
-                switchEditor: function(id = -1) {
-                    //WorkSpace.activeEditor(id);
-                },
-                logout: function() {
-                    window.location.href +="?logout";
+                activeEditor: function(dir) {
+                    // active editor
+                    WorkSpace.activeEditor(dir);
                 },
                 adjustEditor: function() {
+                    // adjust editor style
                     this.editors.aceEditor.renderer.setShowGutter(this.$vuetify.breakpoint.lgAndUp);
                     if(this.$vuetify.breakpoint.lgAndUp) {
                        this.editors.element.classList.add('desktop');
@@ -88,32 +79,81 @@ let WorkSpace = {
                        this.editors.element.classList.remove('desktop');
                     }
                 },
+                checkKeys: function(object, parameters) {
+                    // check if an object has all the required keys
+                    let isOkay = true, i = 0;
+                    while(i < parameters.length && isOkay) {
+                        isOkay = parameters[i] in object && object[parameters[i]] != undefined && object[parameters[i]] != null;
+                        
+                        i++;
+                    }
+                    return isOkay;
+                },
+                closeEditor: function(id) {
+                    // close an editor
+                    const index = this.editors.list.findIndex(function(editor) { return editor.id == id});
+                    let editors = this.editors.list;
+                    
+                    editors.splice(index, 1);
+                    
+                    this.editors.list = editors;
+                    WorkSpace.saveWS();
+                },
+                getActiveEditor: function() {
+                    // return the active editor !!! USEFUL !!!
+                    const arr = this.editors.list.filter(ed => ed.directory == this.editors.activeEditor);
+                    if(arr.length != 0) {
+                        return arr[0];
+                    }
+                    return undefined;
+                },
+                getVersions: function(callback = undefined) {
+                    // get local version of WorkSpace
+                    getRequest('version.txt', {}, (data, err) => {
+                        this.settings.version = (err) ? "Unknown version" : data;
+                        // get online version of WorkSpace
+                        getRequest('https://raw.githubusercontent.com/TheRolfFR/WorkSpace/master/version.txt', {}, (data, err) => {
+                            this.settings.onlineversion = (err) ? "Unknown version" : data;
+                            if(callback) {
+                                // callback if needed
+                                callback();
+                            }
+                        })
+                    })
+                },
                 loadSave: function() {
+                    // try to get a response
                     getJSON('savetabs.json', (err, response) => {
-                        if(err) { // error handling
+                        if(err) { // consider no save if cant find
                             response = {};
                         }
                         
                         // night theme
                         if('nightTheme' in response && typeof(response.nightTheme) == 'boolean') {
-                            Vue.set(this.settings, 'nightTheme', response.nightTheme);
+                            this.settings.nightTheme = response.nightTheme;
                         }
                         
                         // keep track of all loaded editors
-                        let loadededitors = []; // used not to reopen a file
-                        /*
+                        let loadedEditors = []; // used not to reopen a file
+                        
                         if('editors' in response) {
-                            for(let i = 0; i < response.editors.length; i++) {
-                                // load if not loaded
-                                if(loadededitors.indexOf(response.editors[i].directory) == -1) {
-                                    loadededitors.push(response.editors[i].directory);
-                                    Vue.nextTick(function(){
-                                        console.log(response.editors[i].directory, response.editors[i]);
-                                        WorkSpace.loadFile(response.editors[i].directory, i, response.editors[i].cursor, response.editors[i].directory == response.activeEditor);
-                                    })
+                            for(let i in response.editors) {
+                                // load if got all parameters and not loaded
+                                if(this.checkKeys(response.editors[i], ['cursor', 'directory', 'active']) && loadedEditors.findIndex((ed) => { return ed.directory == response.editors[i].directory }) == -1) {
+                                    console.log(response.editors[i]);
+                                    loadedEditors.push(response.editors[i]);
                                 }
                             }
-                        }*/
+                        }
+                        
+                        console.log(loadedEditors);
+                        
+                        // load each file
+                        this.$nextTick(() => {
+                            for(let i in loadedEditors) {
+                                WorkSpace.loadFile(loadedEditors[i].directory, i, loadedEditors[i].cursor, loadedEditors.active);
+                            }
+                        })
                         
                         // explorer part
                         postRequest('access.php', {loadsave: JSON.stringify(response.explorer) }, (response, err) => {
@@ -132,19 +172,26 @@ let WorkSpace = {
                         });
                     });
                 },
-                closeEditor: function(id) {
-                    const index = this.editors.findIndex(function(editor) { return editor.id == id});
-                    let editors = this.editors;
-                    
-                    editors.splice(index, 1);
-                    
-                    Vue.set(this, 'editors', editors);
-                    WorkSpace.saveWS();
+                logout: function() {
+                    window.location.href +="?logout";
                 },
-                push: function(key, val) {
-                    let arr = this[key];
+                openGithub: function() {
+                    // or open a popup
+                    let win = window.open('https://bit.ly/workspace-github', '_blank');
+                    win.focus();
+                },
+                openSettings: function() {
+                    this.getVersions(() => {
+                        this.settings.dialog = true;
+                    });
+                },
+                push: function(context, key, val) {
+                    let arr = context[key];
                     arr.push(val);
-                    Vue.set(this, key, arr);
+                    Vue.set(context, key, arr);
+                },
+                switchEditor: function(id = -1) {
+                    WorkSpace.activeEditor(id);
                 },
                 update: function(key, val, index = -1) {
                     if(index == -1) {
@@ -160,20 +207,11 @@ let WorkSpace = {
                         }
                         this[key][index] = temp;
                     }
-                },
-                getVersions: function() {
-                    getRequest('version.txt', {}, (data, err) => {
-                        this.settings.version = (err) ? "Unknown version" : data;
-                    })
-                    getRequest('https://raw.githubusercontent.com/TheRolfFR/WorkSpace/master/version.txt', {}, (data, err) => {
-                        this.settings.onlineversion = (err) ? "Unknown version" : data;
-                    })
                 }
             },
             computed: {
                 activeEditorName: function() {
-                    let filtered = this.editors.list.filter(tab => tab.id == this.editors.activeEditor);
-                    return (this.editors.list.length != 0) ? filtered[0].filename : '';
+                    return (this.editors.list.length != 0 && this.editors.activeEditor != -1) ? this.getActiveEditor().filename : '';
                 },
                 colorTheme: function() {
                     return (this.settings.nightTheme) ? "#222" : this.color;
@@ -185,20 +223,15 @@ let WorkSpace = {
                },
                'settings.nightTheme': function(value) {
                     if(value) {
-                        if(this.aceEditor.getTheme() == "ace/theme/kuroir") {
-                            this.aceEditor.setTheme("ace/theme/pastel_on_dark");
+                        if(this.editors.aceEditor.getTheme() == "ace/theme/kuroir") {
+                            this.editors.aceEditor.setTheme("ace/theme/pastel_on_dark");
                         }
                     } else {
-                        if(this.aceEditor.getTheme() == "ace/theme/pastel_on_dark") {
-                            this.aceEditor.setTheme("ace/theme/kuroir");
+                        if(this.editors.aceEditor.getTheme() == "ace/theme/pastel_on_dark") {
+                            this.editors.aceEditor.setTheme("ace/theme/kuroir");
                         }
                     }
-               },
-               'editors': {
-                    handler: function (val, oldVal) {
-                        
-                    },
-                    deep: true
+                    WorkSpace.saveWS();
                }
             }
         })
@@ -210,6 +243,7 @@ let WorkSpace = {
         
         postRequest('access.php', { file : directory }, function(response, err){
             
+            // other result than JSON
             let json;
             try {
                 json = JSON.parse(response);
@@ -221,23 +255,37 @@ let WorkSpace = {
             
             if(json[0].substr(0,4) == "text" || json[0].substr(0,5) == "inode") {
                 // add editor to list
-                const mime = json[0].split('/').pop();
+                let mime = json[0].split('/').pop();
+                console.log(mime);
+                switch(mime) {
+                    case "plain":
+                        mime = "";
+                        break;
+                    case "md":
+                        mime = "markdown";
+                    default:
+                        break;
+                }
+                const mode = "ace/mode/" + mime;
                 
-                WorkSpace.vueTabs.push('editors', {
+                // push to editors list
+                WorkSpace.vueTabs.push(WorkSpace.vueTabs.editors, 'list', {
                     directory: directory,
-                    EditSession: new ace.createEditSession(json[1], "ace/mode/" + mime),
+                    EditSession: new ace.createEditSession(json[1], mode),
                     filename: filename,
                     cursor: cursor,
                     mime: mime
                 });
                 
-                that.activeEditor(WorkSpace.vueTabs.editors.length - 1);
                 that.saveWS();
+                
+                WorkSpace.vueTabs.$nextTick(function(){
+                    this.$refs.tabs[this.$refs.tabs.length - 1].click();
+                });
             } else {
                 // or open a popup
-                document.body.appendHTML('<form target="_blank" action="' + directory + '" method="get" id="popup"></form>');
-                document.getElementById('popup').submit();
-                document.getElementById('popup').remove();
+                let win = window.open(directory, '_blank');
+                win.focus();
             }
         });
     },
@@ -319,30 +367,47 @@ let WorkSpace = {
         });
     },
     
-    activeEditor: function(index) {
-        if(this.vueTabs.editors.length == 0) {
-            this.vueTabs.editor.style.display = "none";
+    activeEditor: function(directory) {
+        // empty list error
+        if(this.vueTabs.editors.list.length == 0) {
+            this.vueTabs.editors.editor.style.display = "none";
+            this.handleError("Empty list");
             return;
         }
         
-        this.vueTabs.editor.style.display = 'block';
+        // not in the list
+        let list = this.vueTabs.editors.list.filter(ed =>ed.directory == directory);
+        if(list.length == 0) {
+            this.handleError(directory + " not in the editors list");
+            return;
+        }
+        
+        let activeEditor = this.vueTabs.getActiveEditor();
         
         // previous editor
-        if(this.vueTabs.activeEditor != -1) {
-            this.vueTabs.editors[this.vueTabs.activeEditor].EditSession = this.vueTabs.aceEditor.getSession();
-            this.vueTabs.editors[this.vueTabs.activeEditor].cursor = this.vueTabs.aceEditor.getCursorPosition();
+        if(activeEditor != undefined) {
+            activeEditor.EditSession = this.vueTabs.editors.aceEditor.getSession();
+            activeEditor.cursor = this.vueTabs.editors.aceEditor.getCursorPosition();
         }
         
         // new editor
-        this.vueTabs.activeEditor = index;
+        if(this.vueTabs.editors.list.length != 0) {
+            this.vueTabs.editors.activeEditor = directory;
+            this.vueTabs.editors.element.style.display = 'block';
         
-        /*
-        Vue.nextTick(() => {
-            this.vueTabs.aceEditor.setSession(this.vueTabs.editors[index].EditSession);
-            this.vueTabs.aceEditor.gotoLine(this.vueTabs.editors[index].cursor.row+1, this.vueTabs.editors[index].cursor.column, false);
-            this.vueTabs.aceEditor.scrollToRow(this.vueTabs.editors[index].cursor.row+1);
-            this.vueTabs.aceEditor.focus();
-        })*/
+        
+            this.vueTabs.$nextTick(function() {
+                activeEditor = this.getActiveEditor();
+                
+                this.editors.aceEditor.setSession(activeEditor.EditSession);
+                this.editors.aceEditor.gotoLine(activeEditor.cursor.row+1, activeEditor.cursor.column, false);
+                this.editors.aceEditor.scrollToRow(activeEditor.cursor.row+1);
+                this.editors.aceEditor.focus();
+            })
+        } else  {
+            this.vueTabs.editors.activeEditors = -1;
+            this.vueTabs.editors.element.style.display = 'none';
+        }
     },
     
     switchTab: function(index) {
@@ -350,8 +415,8 @@ let WorkSpace = {
     },
     
     getActiveEditor: function() {
-        for(let key in this.list) {
-            if(this.list[key].active == true) {
+        for(let key in this.vueTabs.editors.list) {
+            if(this.vueTabs.editors.list[key].directory == this.vueTabs.editors.activeEditor) {
                 return key;
             }
         }
@@ -362,11 +427,11 @@ let WorkSpace = {
         if(target.classList.contains('file')) {
             // do not load if alreasy loaded
             const dir = target.getAttribute('data-src');
-            const index = this.vueTabs.editors.findIndex(function(editor) { return editor.directory == dir});
+            const index = this.vueTabs.editors.list.findIndex(function(editor) { return editor.directory == dir});
             if(index != -1) {
                 this.switchTab(index);
             } else {
-                this.loadFile(dir);
+                this.loadFile(dir, this.vueTabs.editors.list.length);
             }
         } else if(target.classList.contains('folder') && !target.classList.contains('charging')) {
             if(target.classList.contains('charged')) {
@@ -399,7 +464,8 @@ let WorkSpace = {
     
     saveFile: function() {
         let that = this;
-        postRequest("save.php", { dir : this.list[this.getActiveEditor()].directory, content: this.list[this.getActiveEditor()].EditSession.getValue() }, function(response, err){
+        this.vueTabs.editors.list[this.getActiveEditor()].EditSession = this.vueTabs.editors.aceEditor.getSession();
+        postRequest("save.php", { dir : this.vueTabs.editors.list[this.getActiveEditor()].directory, content: this.vueTabs.editors.list[this.getActiveEditor()].EditSession.getValue() }, function(response, err){
             if(err) {
                 that.handleError(response.responseText);
                 console.error("error " + err + " : ", response);
@@ -420,48 +486,35 @@ let WorkSpace = {
     },
     
     saveWS: function() {
-        let that = this;
-        // intialize and blacktheme
-        const activeEditor = (this.getActiveEditor() != undefined) ? this.list[this.getActiveEditor()].directory : '';
-        
-        var savedEditors = [];
-        for(i in this.vueTabs.editors) {
+        // editors
+        const activeEditor = (this.getActiveEditor() != undefined) ? this.vueTabs.editors.list[this.getActiveEditor()].directory : '';
+        let savedEditors = [], isActiveEditor;
+        for(let i in this.vueTabs.editors.list) {
+            isActiveEditor = this.vueTabs.editors.activeEditor == this.vueTabs.editors.list[i].directory;
             savedEditors.push({
-                cursor:  this.vueTabs.editors[i].cursor,
-                directory:  this.vueTabs.editors[i].directory
+                cursor:  (isActiveEditor) ? this.vueTabs.editors.aceEditor.getCursorPosition() : this.vueTabs.editors.list[i].cursor,
+                directory:  this.vueTabs.editors.list[i].directory,
+                active: isActiveEditor
             })
         }
-        console.log(savedEditors);
         
-        
-        
+        // explorer + nightTheme
         let json = {
             explorer: {
                 ".." : this.chargedFolders[""]
             },
             nightTheme : this.vueTabs.settings.nightTheme,
-            editors: savedEditors,
-            activeEditor: activeEditor
+            editors: savedEditors
         };
         
-        // editors
-        if(this.getActiveEditor() != undefined) {
-            this.list[this.getActiveEditor()].cursor = this.vueTabs.aceEditor.getCursorPosition();
-        }
-        for(let key in this.list) {
-            json.editors.push({
-                directory: this.list[key].directory,
-                filename: this.list[key].filename,
-                cursor: this.list[key].cursor
-            });
-        }
-        
-        console.log(json);
-        postRequest("savetabs.php", {json : JSON.stringify(json)}, function(response, err){
+        // save tabs
+        postRequest("savetabs.php", {json : JSON.stringify(json)}, (response, err) => {
             if(err) {
-                that.handleError(response.responseText);
+                this.handleError(response.responseText);
                 console.error("error " + response.status + " : " + response.responseText);
                 return;
+            } else {
+                console.log("WorkSpace saved.");
             }
         });
     },

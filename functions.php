@@ -43,6 +43,7 @@ function custom_mime($filename) {
         'txt' => 'text/plain',
         'htm' => 'text/html',
         'html' => 'text/html',
+        'md' => 'text/markdown',
         'php' => 'text/php',
         'css' => 'text/css',
         'js' => 'text/javascript',
