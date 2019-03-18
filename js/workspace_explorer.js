@@ -87,7 +87,7 @@ let WorkSpaceExplorer = new Object({
         let src = custoMenu.getData('data-src');
         let filename = custoMenu.element.innerText;
         
-        WorkSpace.vueTabs.update('confirm', {
+        WorkSpace.update('confirm', {
             see: true,
             title: 'Delete file?',
             text: 'Are you sure to delete ' + filename + '?',
@@ -168,13 +168,13 @@ let WorkSpaceExplorer = new Object({
 	    const src = custoMenu.getData('data-src');
         const name = custoMenu.element.innerText;
         
-        Vue.set(WorkSpace.vueTabs, 'prompt', {
+        Vue.set(WorkSpace, 'prompt', {
             see: true,
             text: 'Choose a new name',
             value: name,
             submitText: 'Rename',
             callback: function(newname) {
-                WorkSpace.vueTabs.prompt.see = false;
+                WorkSpace.prompt.see = false;
                 postRequest('action.php', {'rename' : src, 'newname' : newname}, function(response, err){
                     if(response == 'done') {
                         custoMenu.element.classList.remove(name.split('.').pop());
@@ -205,7 +205,7 @@ let WorkSpaceExplorer = new Object({
     newFolder: function(){
         const src = custoMenu.getData('data-src');
         
-        WorkSpace.vueTabs.update('prompt', {
+        WorkSpace.update('prompt', {
             see: true,
             text: 'New folder: Choose a name',
             label: 'Name',
@@ -238,7 +238,7 @@ let WorkSpaceExplorer = new Object({
         const src = custoMenu.getData('data-src');
         const el = custoMenu.element;
         
-        WorkSpace.vueTabs.update('prompt', {
+        WorkSpace.update('prompt', {
             see: true,
             text: 'New file: Choose a name',
             label: 'Name',
@@ -328,8 +328,8 @@ let WorkSpaceExplorer = new Object({
     },
     
     refresh: function() {
-        WorkSpace.vueTabs.openInExplorer(custoMenu.element);
-        WorkSpace.vueTabs.openInExplorer(custoMenu.element);
+        WorkSpace.openInExplorer(custoMenu.element);
+        WorkSpace.openInExplorer(custoMenu.element);
     }
 });
 let filectxmenu = {

@@ -1,9 +1,10 @@
+let aceEditor;
 document.addEventListener('DOMContentLoaded', function(){
     
     // intialize the editor
     ace.require("ace/ext/emmet");
     ace.require("ace/ext/language_tools");
-    let aceEditor = ace.edit("editor", {
+    aceEditor = ace.edit("editor", {
         showPrintMargin: false,
         enableBasicAutocompletion: true
     });
@@ -12,13 +13,13 @@ document.addEventListener('DOMContentLoaded', function(){
     aceEditor.commands.addCommand({
         name: "save",
         bindKey: { win: "ctrl-s", mac: "cmd-s" },
-        exec: function() { WorkSpace.vueTabs.saveFile() }
+        exec: function() { WorkSpace.saveFile() }
     });
     
     WorkSpace.init(aceEditor, function(){
-        WorkSpace.vueTabs.explorerElement.addEventListener('click', function(evt) {
+        WorkSpace.explorerElement.addEventListener('click', function(evt) {
             evt.preventDefault();
-            WorkSpace.vueTabs.openInExplorer(evt.target);
+            WorkSpace.openInExplorer(evt.target);
         });
     });
 
