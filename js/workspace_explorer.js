@@ -328,8 +328,8 @@ let WorkSpaceExplorer = new Object({
     },
     
     refresh: function() {
-        WorkSpace.openInExplorer(custoMenu.element);
-        WorkSpace.openInExplorer(custoMenu.element);
+        WorkSpace.vueTabs.openInExplorer(custoMenu.element);
+        WorkSpace.vueTabs.openInExplorer(custoMenu.element);
     }
 });
 let filectxmenu = {

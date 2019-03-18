@@ -23,11 +23,14 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-language_tools.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-emmet.js"></script>
         
-        <!-- CustoMenu : custom contextmenu !-->
-        <link  href="https://cdn.jsdelivr.net/gh/TheRolfFR/custoMenu@2/custoMenu.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/gh/TheRolfFR/custoMenu@2/custoMenu.js"></script>
+        <!-- jshashes! Hashes library for JS -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jshashes/1.0.7/hashes.min.js"></script>
         
-        <!-- miniNotif : custom browser notification !-->
+        <!-- CustoMenu : custom contextmenu -->
+        <link  href="https://cdn.jsdelivr.net/gh/TheRolfFR/custoMenu@2/custoMenu.css" rel="stylesheet">
+        <script src="js/custoMenu.js"></script>
+        
+        <!-- miniNotif : custom browser notification -->
         <link  href="https://cdn.jsdelivr.net/gh/TheRolfFR/miniNotif@2/miniNotif.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/gh/TheRolfFR/miniNotif@2/miniNotif.js"></script>
         
@@ -40,6 +43,7 @@
         <link href="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css" rel="stylesheet">
         
         <!-- my js -->
+        <script src="js/polyfill.js"></script>
         <script src="js/extensionjs.js"></script>
         <script src="js/ajax.js"></script>
         <script src="js/workspace.js"></script>
@@ -47,7 +51,7 @@
         <script src="js/script.js"></script>
         
         <!-- my css -->
-        <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/editor.css">
     </head>
 
     <body>
@@ -96,7 +100,7 @@
                         </v-list-tile>
                         
                         <v-card-actions>
-                            <v-btn block color="grey darken-4" dark v-on:click="openGithub()">{{ (settings.version >= settings.onlineversion) ? 'View' : 'Update ' + settings.onlineversion + ' available' }} on GitHub <i class="fab fa-github-alt" aria-hidden="true"></i></v-btn>
+                            <v-btn block color="grey darken-4" dark v-on:click="openGithub()">{{ (settings.version >= settings.onlineversion) ? 'View' : 'Update ' + settings.onlineversion + ' available' }} on GitHub <i id="github" class="fab fa-github-alt" aria-hidden="true"></i></v-btn>
                         </v-card-actions>
                     </v-list>
                     
@@ -107,6 +111,7 @@
                     <v-card-text>
                         <v-form ref="passwordform" lazy-validation>
                             <v-text-field
+                              v-model="settings.currentpassword"
                               label="Current password"
                               :rules="settings.rules.password"
                               required
@@ -114,6 +119,7 @@
                             ></v-text-field>
                             
                             <v-text-field
+                              v-model="settings.newpassword"
                               label="New password"
                               :rules="settings.rules.password"
                               required
@@ -121,6 +127,7 @@
                             ></v-text-field>
                             
                             <v-text-field
+                              v-model="settings.confirmnewpassword"
                               label="Confirm new password"
                               :rules="settings.rules.password"
                               required
@@ -131,7 +138,7 @@
                     
                     <v-card-actions>
                         <v-spacer></v-spacer>
-                        <v-btn flat @click="settingsDialog = false">Save password</v-btn>
+                        <v-btn flat @click="changePassword()">Save password</v-btn>
                     </v-card-actions>
                   </v-card>
                 </v-dialog>
@@ -237,7 +244,7 @@
             <v-toolbar height="48" :color="colorTheme" dark app class="toolbar elevation-2 hidden-md-and-down">
                 <v-tabs dark color="transparent" show-arrows>
                     <v-tabs-slider></v-tabs-slider>
-                    <v-tab ref="tabs" v-for="(editor, index) in editors.list" :key="editor.index" :class="editor.mime" @click="activeEditor(editor.directory)" @contextmenu.prevent="closeEditor(editor.id)">{{ editor.filename }}</v-tab>
+                    <v-tab ref="tabs" v-for="(editor, index) in editors.list" :key="index" :class="editor.mime" v-on:click="activeEditor(editor.directory)" v-on:contextmenu.prevent="closeEditor(editor.directory)">{{ editor.filename }}</v-tab>
                 </v-tabs>
                 
         	    <v-btn icon @click="openSettings()">
