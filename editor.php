@@ -23,7 +23,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-language_tools.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-emmet.js"></script>
         
-        <!-- jshashes! Hashes library for JS -->
+        <!-- jshashes : Hashes library for JS -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jshashes/1.0.7/hashes.min.js"></script>
         
         <!-- CustoMenu : custom contextmenu -->
