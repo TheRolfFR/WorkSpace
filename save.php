@@ -13,12 +13,19 @@ if(connected()) {
                 file_put_contents($filename, $content, LOCK_EX);
                 $retour = 'done';
             } else {
+                http_response_code(404);
                 $retour = 'Cant find file';
             }
+        } else {
+            http_response_code(400);
+            $retour = "No dir or content parameter";
         }
+    } else {
+        http_response_code(400);
+        $retour = "No POST parameter";
     }
-    // $retour = 'method empty : ' . var_dump($_POST) . var_dump($_GET) . '';
 } else {
+    http_response_code(403);
     $retour = 'not connected';
 }
 

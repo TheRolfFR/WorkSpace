@@ -22,7 +22,7 @@ function rrmdir($dir) {
 }
 
 function cget($get, $get1='', $get2='') {
-    $f = check($_GET[$get]);
+    $f = check($_POST[$get]);
     if($get1 !== '') {
         if($get2 !== '') {
             return ($f && cget($get1, $get2));
@@ -33,7 +33,7 @@ function cget($get, $get1='', $get2='') {
 }
 
 function csec($get) {
-    return sec($_GET[$get]);
+    return sec($_POST[$get]);
 }
 
 function dircopy($source, $dest, $perm = 0755) {
@@ -62,7 +62,7 @@ function dircopy($source, $dest, $perm = 0755) {
 }
 
 if(connected()) {
-    if(check($_GET)) {
+    if(check($_POST)) {
         if(cget('open','src')) {  //open function
             //secure vars
             $fileorfolder = csec('open');
@@ -273,13 +273,15 @@ if(connected()) {
             
             if(file_exists($src) and (!file_exists($file)) ) {
                 if (file_put_contents($file, '') !== false) {
-                    echo "done";
+                    $return = "done";
                 } else {
-                    echo "Cannot create file (" . basename($file) . ")";
+                    $return = "Cannot create file (" . basename($file) . ")";
                 }
             } else {
                 echo 'the file or the directory already exists';
             }
+            
+            echo $return;
         }//
         
         if(cget('newfolder', 'name')) {
@@ -305,8 +307,12 @@ if(connected()) {
             echo $retour;
         }
     } else {
+        http_response_code(400);
         echo 'no parameters sent';
     }
+} else {
+    http_response_code(403);
+    echo 'not connected';
 }
 
 ?>

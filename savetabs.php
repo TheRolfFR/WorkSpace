@@ -4,22 +4,19 @@ require('verifco.php');
 $retour = 'error';
 
 if(connected()) {
-    if(check($_GET)) {
-        if(check($_GET['json'])) {
-            $json = json_decode($_GET['json'], true);
+    if(check($_POST)) {
+        if(check($_POST['json'])) {
+            $json = json_decode($_POST['json'], true);
             
-            $jsonfile = './savetabs.json';
+            $jsonFileName = './savetabs.json';
 
-            if(file_exists($jsonfile)) {
-                file_put_contents($jsonfile, json_encode($json), LOCK_EX);
-                $retour = 'done';
-            } else {
-                $retour = 'Cant find file';
-            }
+            $jsonFile = fopen($jsonFileName, 'w');
+            fwrite($jsonFile, json_encode($json));
+            fclose($jsonFile);
         }
     }
-    // $retour = 'method empty : ' . var_dump($_POST) . var_dump($_GET) . '';
 } else {
+    http_response_code(403);
     $retour = 'not connected';
 }
 

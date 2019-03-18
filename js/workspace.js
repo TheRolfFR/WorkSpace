@@ -1,473 +1,559 @@
-/*
-
- uses miniNotif. More at :
- https://github.com/TheRolfFR/miniNotif
- __        __         _     ____                       
- \ \      / /__  _ __| | __/ ___| _ __   __ _  ___ ___ 
-  \ \ /\ / / _ \| '__| |/ /\___ \| '_ \ / _` |/ __/ _ \
-   \ V  V / (_) | |  |   <  ___) | |_) | (_| | (_|  __/
-    \_/\_/ \___/|_|  |_|\_\|____/| .__/ \__,_|\___\___|
-                                 |_|                   
-  
- by TheRolf
- https://github.com/TheRolfFR
- 
-*/
-
-function randint() {
-    return Math.floor(Math.random() * 10000) + 1;  
-}
-function iframeload() {
-    var iframe = $('#preview iframe');
-    var input = $('#urlbar input');
-    var src = input.val();
-    if(src.trim() !== '') {
-        iframe.attr('src','');
-        var separator = (src.match(/\?/)) ? '&' : '?';
-        iframe.attr('src', src + separator + 'var=' + randint());
-    }
-}
-
-function check_required(array,required) {
-    var response = true;
-    for(var i = 0; i < required.length; i++) {
-        if(!(required[i] in array)) { response = false; }
-    }
-    return response;
-}
-
-function openFile(directory, cursor = "") {
-    // look for existing opened editor
-    var existing = Workspace.searchEditor('directory', directory);
-    if(existing !== undefined) {
-        Workspace.switchEditor(existing.id);
-    } else {
-        // grt file content
-        $.get("access.php", { "file": directory }, function(data) {
-            // data protection
-            data = JSON.parse(data);
-            if(typeof data =='object')
-            {
-                if((data[0] == 'text') || (data[0] == 'inode')) {
-                    // add an editor
-                    data[1] = (data.length == 1) ? "": data[1];
-                    var array = {
-                        'directory': directory,
-                        'content': data[1]
-                    };
-                    if(cursor !== "") {
-                        array.cursor = cursor;
-                    }
-                    Workspace.addEditor(array);
-                    return;
-                } else {
-                    // or open a popup
-                    $('<form target="_blank" action="' + directory + '" method="get"></form>').appendTo('body').submit().remove();
+let WorkSpace;
+document.addEventListener('DOMContentLoaded', function(){
+    WorkSpace = new Vue({
+        el: '#app',
+        data: () => ({
+            drawer: false,
+            snackbar: false,
+            snackbarText: "",
+            color: "#0060ac",
+            explorer: {},
+            explorerElement: undefined,
+            chargedFolders: { "": {}}, 
+            editors: {
+                aceEditor: undefined,
+                element: undefined,
+                list: [],
+                activeEditor: -1
+            },
+            prompt: {
+                see: false,
+                text: '',
+                submitText: '',
+                value: '',
+                callback: function() {}
+            },
+            confirm: {
+                see: false,
+                title: '',
+                text: '',
+                cbk: function(value){
+                    this.see = false;
+                    this.callback(value);
+                },
+                callback: function() {}
+            },
+            settings: {
+                dialog: false,
+                nightTheme: true,
+                version: '0.0.0',
+                onlineversion: '0.0.0',
+                rules: {
+                    password: [v => !!v || 'A value is required']
+                },
+                currentpassword: '',
+                newpassword: '',
+                confirmnewpassword: ''
+            }
+        }),
+        methods: {
+            activeEditor: function(directory) {
+                // empty list error
+                if(this.editors.list.length == 0) {
+                    this.editors.element.style.display = "none";
                     return;
                 }
-            }
-            else
-            {
-                console.log("Error loading the file, data received : ");
-                console.log(data);
-                var icon = '<i class="material-icons">&#xE161;</i>';
-                miniNotif.addNotif(1, "Error loading the file, please check the console", icon, 'red');
-            }
-        });
-    }
-}
-
-// save a file
-function save(dir, content) {
-    if(dir !== '') {
-        var url = window.location.href;
-        var parent = url.substring( 0, url.lastIndexOf( "/" ) + 1);
-        var finalurl = parent + "save.php";
-    
-        var params = {
-            dir: dir,
-            content: content
-        };
-    
-        $.post(finalurl, params, function(data){
-            
-            var icon = '<i class="material-icons">&#xE161;</i>';
-            if(data == 'done') {
-                miniNotif.addNotif(1, 'Saved', icon, 'white');
                 
-                iframeload();
-            } else {
-                miniNotif.addNotif(1, data, icon, 'red');
-                if(data == 'not connected') {
-                    redirectToLogin();
+                // not in the list
+                let list = this.editors.list.filter(ed =>ed.directory == directory);
+                if(list.length == 0) {
+                    this.handleError(directory + " not in the editors list");
+                    this.editors.element.style.display = "none";
+                    return;
                 }
-            }
-        });
-    }
-}
-function redirectToLogin() {
-    var url = window.location.href.split('/')
-    url.pop()
-    window.location.href = url.join('/') + '/'
-}
-
-var Workspace = {
-    tabs_element: '#e_tabs',
-    tab_element: '.tab',
-    editors_element: '#e_editors',
-    editor_element: '.editor',
-    
-    //editor list empty
-    list: [],
-    lastid: 0,
-
-    init: function() {
-        $.getJSON("savetabs.json", function( data ) {
-            
-            // editors
-            if(data.hasOwnProperty('editors')) {
-                for(var i = 0; i < data.editors.length; i++) {
-                        var required = ["directory"];
-                        if(check_required(data.editors[i], required)) {
-                            openFile(data.editors[i].directory, data.editors[i].cursor);
-                        }
+                
+                let activeEditor = this.getActiveEditor();
+                
+                // previous editor
+                if(activeEditor != undefined) {
+                    activeEditor.EditSession = this.editors.aceEditor.getSession();
+                    activeEditor.cursor = this.editors.aceEditor.getCursorPosition();
                 }
-            }
-            
-            // preview
-            if(data.hasOwnProperty('preview')) {
-                var preview = data.preview;
-                $(document).find('#preview').css('height', preview.height);
-                $(document).find('#main #top').css('height', $(document).find('#main #top').innerHeight() - preview.height);
-                $(document).find('#preview input').val(preview.url);
-                $(document).find('#preview #urlbar').submit();
-            }
-        });
-    },
-    
-    // save names of edited files
-    saveWs: function() {
-        var json = {};
-        
-        // nav
-        json.explorer = {};
-        $(document).find('.folder.charged').each(function(i){
-            json.explorer[i] = $(this).attr('data-src');
-        });
-        
-        // editors
-        json.editors = {};
-        $(document).find(this.tabs_element + ' ' + this.tab_element).each(function(i){
-           var editorId = parseInt($(this).attr('alt')); 
-           var editorIndex = Workspace.searchEditor('id', editorId, true);
-           var editor = Workspace.list[editorIndex];
-           var active = $(this).hasClass('active');
-           
-           json.editors[i] = {
-               directory: editor.directory,
-               filename: editor.filename,
-               cursor: editor.ace_editor.getCursorPosition(),
-               active: active
-           };
-        });
-        
-        // preview
-        json.preview = {
-            "height" : $(document).find('#preview').innerHeight(),
-            "url" : $(document).find('#preview input').val()
-        };
-        
-        json = JSON.stringify(json);
-        $.get("savetabs.php", { "json": json}, function(data) {
-            if(data != 'done') {
-                miniNotif.addNotif(1, data, '<i class="material-icons">&#xE5CD;</i>', 'red');
-                if(data == 'not connected') {
-                    redirectToLogin();
+                
+                // new editor
+                if(this.editors.list.length != 0) {
+                    this.editors.activeEditor = directory;
+                    this.editors.element.style.display = 'block';
+                
+                
+                    this.$nextTick(function() {
+                        activeEditor = this.getActiveEditor();
+                        
+                        this.editors.aceEditor.setSession(activeEditor.EditSession);
+                        this.editors.aceEditor.gotoLine(activeEditor.cursor.row+1, activeEditor.cursor.column, false);
+                        this.editors.aceEditor.scrollToRow(activeEditor.cursor.row);
+                        this.editors.aceEditor.focus();
+                    })
+                } else  {
+                    this.editors.activeEditors = undefined;
+                    this.editors.element.style.display = 'none';
                 }
-            }
-        });
-    },
-
-    addEditor: function(array) {
-        
-        var required = ['directory', 'content'];
-        if(check_required(array, required)) {
-            // get extension and filename
-            var regex = /\/([^\/]*)\.([^\.]+)$/ ;
-            var matches = array['directory'].match(regex);
-            var extension = matches[2];
-            var filename = matches[1] + '.' + matches[2];
+            },
             
-            // add a new tab
-            $(this.tabs_element).append('<div class="' + this.lastid + ' tab middle" alt="' + this.lastid + '"><div class="file ' + extension + '">' + filename + '</div><div class="close"></div><span class="taille"></span></div>');
-            
-            // prepare object
-            var object = {
-                directory: array['directory'],
-                id: this.lastid,
-                filename: filename,
-                name: "editor" + this.lastid,
-                saved: true
-            };
-            
-            // add a new pre (before editor)
-            $(this.editors_element).append('<pre id="' + object.name + '" class="editor"></pre>');
-            
-            // create editor
-            ace.require("ace/ext/language_tools");
-            ace.require("ace/ext/emmet");
-        
-            // ace editor refers to id
-            e = ace.edit(object.name);
-            e.$blockScrolling = Infinity;
-            
-            //Set content
-            e.setValue(array['content'], -1);
-            
-            // set style
-            e.setTheme("ace/theme/monokai");
-            e.setShowPrintMargin(false);
-            
-            // add commands
-            e.commands.addCommand({
-                name: "save",
-                bindKey: { win: "ctrl-s", mac: "cmd-s" },
-                exec: function (e) {
-                    save(array.directory, e.getValue());
-                    object.saved = true;
-                    Workspace.switchClassSaved(1, '.tab.' + object.id);
-                    Workspace.saveWs();
-                }
-            });
-            e.commands.addCommand({
-                name: 'close',
-                bindKey: { win: 'alt-w', mac: 'alt-w' },
-                exec: function (e) {
-                    Workspace.deleteEditor(object.id, array['directory']);
-                }
-            });
-        
-            //set type
-            if (extension == 'js') {
-                extension = 'javascript';
-            } else if(extension == 'md') {
-                extension = 'markdown';
-            }
-            e.session.setMode("ace/mode/" + extension);
-        
-            // set options
-            e.setOptions({
-                enableBasicAutocompletion: true,
-                enableSnippets: true,
-                enableLiveAutocompletion: false
-            });
-            e.setOption("enableEmmet", true);
-            e.getSession().setUseWrapMode(true);
-        
-            // focus e
-            e.focus();
-        
-            // goto cursor else goto line 1, comumn 0
-            var row = 1;
-            var column = 0;
-            if(array.hasOwnProperty('cursor')) {
-                if(array.cursor.hasOwnProperty('row') && array.cursor.hasOwnProperty('column')) {
-                    row = array.cursor.row;
-                    column = array.cursor.column;
-                }
-            }
-            e.gotoLine(row, column);
-    
-            object.ace_editor = e;
-    
-            this.list.push(object);
-            this.lastid++;
-            
-            e.on('input', function () {
-                object.saved = false;
-                Workspace.saveWs();
-                Workspace.switchClassSaved(0, '.tab.' + object.id);
-            });
-            
-            this.switchEditor(object.id);
-            
-            Workspace.switchClassSaved(1, object.id);
-        }
-    },
-    
-    switchClassSaved: function(addornot, selector) {
-        var element = $(document).find(selector);
-        if(addornot) { element.addClass('saved') } else { element.removeClass('saved') }
-    },
-
-    // return object with id
-    searchEditor: function(property, value, getIndex = false) {
-        for(var i = 0; i < this.list.length; i++) {
-            if(this.list[i][property] == value) {
-                if(getIndex) {
-                    return i;
+            adjustEditor: function() {
+                // adjust editor style
+                let isDesktop = this.isDesktop;
+                this.editors.aceEditor.renderer.setShowGutter(isDesktop);
+                if(isDesktop) {
+                    this.editors.element.classList.add('desktop');
                 } else {
-                    return this.list[i];
+                    this.editors.element.classList.remove('desktop');
+                }
+                if(!this.settings.nightTheme && this.editors.aceEditor.getTheme() == "ace/theme/pastel_on_dark") {
+                    this.editors.aceEditor.setTheme("ace/theme/kuroir");
+                }
+                if(this.settings.nightTheme && this.editors.aceEditor.getTheme() == "ace/theme/kuroir") {
+                    this.editors.aceEditor.setTheme("ace/theme/pastel_on_dark");
+                }
+            },
+            
+            changePassword: function() {
+                let MD5 = new Hashes.MD5()
+                const json = {
+                    currentpassword: MD5.hex(this.settings.currentpassword),
+                    newpassword: MD5.hex(this.settings.newpassword),
+                    confirmnewpassword: MD5.hex(this.settings.confirmnewpassword)
+                };
+                console.log(json);
+                postRequest('change_password.php', json, (data, err) =>{
+                    if(err) {
+                        this.handleError(data);
+                    }
+                    
+                    this.settings.dialog = false;
+                })
+            },
+            
+            checkKeys: function(object, parameters) {
+                // check if an object has all the required keys
+                let isOkay = true, i = 0;
+                while(i < parameters.length && isOkay) {
+                    isOkay = parameters[i] in object && object[parameters[i]] != undefined && object[parameters[i]] != null;
+                    
+                    i++;
+                }
+                return isOkay;
+            },
+            
+            closeEditor: function(dir) {
+                // close an editor
+                
+                // get index of the editor to close
+                const index = this.editors.list.findIndex(function(editor) { return editor.directory == dir});
+                
+                // switch to previous editor or the first one
+                if(this.$refs.tabs.length) {
+                    this.switchTab((index - 1 < 0) ? 0 : index -1);
+                } // or display no editor
+                else {
+                    this.activeEditor(-1);
+                }
+                
+                let editors = this.editors.list;
+                
+                editors.splice(index, 1);
+                
+                this.editors.list = editors;
+                this.saveWS();
+            },
+            
+            getActiveEditor: function() {
+                // return the active editor !!! USEFUL !!!
+                const arr = this.editors.list.filter(ed => ed.directory == this.editors.activeEditor);
+                if(arr.length != 0) {
+                    return arr[0];
+                }
+                return undefined;
+            },
+            
+            getVersions: function(callback = undefined) {
+                // get local version of WorkSpace
+                getRequest('version.txt', {}, (data, err) => {
+                    this.settings.version = (err) ? "Unknown version" : data;
+                    // get online version of WorkSpace
+                    getRequest('https://raw.githubusercontent.com/TheRolfFR/WorkSpace/master/version.txt', {}, (data, err) => {
+                        this.settings.onlineversion = (err) ? "Unknown version" : data;
+                        if(callback) {
+                            // callback if needed
+                            callback();
+                        }
+                    })
+                })
+            },
+            
+            handleError: function(error) {
+                let doLogout = false;
+                
+                if(typeof(error) == 'string' && error == 'not connected') {
+                    doLogout = true;
+                } else {
+                    if(typeof(error) == 'object' && 'responseText' in error && error['responseText'] != '' && error['responseText'] == 'not connected') {
+                        doLogout = true;
+                    }
+                    console.error(error);
+                    miniNotif.addNotif({
+                        process: false,
+                        text: "An error occured, please check console for more details.",
+                        color: 'red',
+                        icon: '<i class="fas fa-exclamation-circle"></i>'
+                    })
+                }
+                
+                if(doLogout) {
+                    this.logout();
+                }
+            },
+            
+            init: function(aceEditor, callback) {
+                // initialize
+                this.editors.aceEditor = aceEditor;
+                this.editors.element = document.getElementById('editor');
+                this.explorerElement = document.getElementById('explorer');
+                this.drawer = this.$vuetify.breakpoint.lgAndUp;
+                this.$nextTick(function(){
+                    this.adjustEditor();
+                    this.loadSave();
+                    callback();
+                })
+            },
+            
+            loadExplorer: function(directory, destination) {
+                postRequest('access.php', {loadfolder: directory}, (response, err) => {
+                    // remove charging class does not tell if it was successful
+                    destination.classList.remove('charging');
+                    
+                    // try to parse JSON
+                    let json;
+                    try {
+                        json = JSON.parse(response);
+                    } catch (e) {
+                        this.handleError(response);
+                        return;
+                    }
+                    
+                    // if so it is charged
+                    destination.classList.add('charged');
+                    // add content to explorer
+                    this.setExplorer(destination.parentElement, json);
+                    
+                    // add in charged folders
+                    let directories = directory.split('/');
+                    directories.pop();
+                    let currentFolder = this.chargedFolders;
+                    let i = 0;
+                    while(directories[i] in currentFolder) {
+                        currentFolder = currentFolder[directories[i]];
+                        i++;
+                    }
+                    
+                    directories = directories[i];
+                    
+                    currentFolder[directories] = {};
+                    this.saveWS();
+                });
+            },
+            
+            loadFile: function(directory, index, cursor = { row: 0, column: 0 }, activeEditor = true) {
+                let filename = directory.split('/').pop();
+                
+                postRequest('access.php', { file : directory }, (response, err) => {
+                    
+                    // other result than JSON
+                    let json;
+                    try {
+                        json = JSON.parse(response);
+                    } catch(err) {
+                        this.handleError(response.responseText);
+                        console.error('error ' + response.status + ' : ', response);
+                        return;
+                    }
+                    
+                    if(json[0].substr(0,4) == "text" || json[0].substr(0,5) == "inode") {
+                        // add editor to list
+                        let mime = json[0].split('/').pop();
+                        switch(mime) {
+                            case "md":
+                                mime = "markdown";
+                            default:
+                                break;
+                        }
+                        const mode = "ace/mode/" + mime;
+                        
+                        // push to editors list
+                        this.push(this.editors, 'list', {
+                            directory: directory,
+                            EditSession: new ace.createEditSession(json[1], mode),
+                            filename: filename,
+                            cursor: cursor,
+                            mime: mime
+                        });
+                        
+                        this.saveWS();
+                        
+                        this.$nextTick(function(){
+                            this.$refs.tabs[this.$refs.tabs.length - 1].click();
+                        });
+                    } else {
+                        // or open a popup
+                        let win = window.open(directory, '_blank');
+                        win.focus();
+                    }
+                });
+            },
+            
+            loadSave: function() {
+                // disable syyntax validation for all editors
+                require("ace/config").setDefaultValue("session", "useWorker", false);
+                // try to get a response
+                getJSON('savetabs.json', (err, response) => {
+                    if(err) { // consider no save if cant find
+                        response = {};
+                    }
+                    
+                    // night theme
+                    if('nightTheme' in response && typeof(response.nightTheme) == 'boolean') {
+                        Vue.set(this.settings, 'nightTheme', response.nightTheme);
+                    }
+                    
+                    // keep track of all loaded editors
+                    let loadedEditors = []; // used not to reopen a file
+                    
+                    if('editors' in response) {
+                        for(let i in response.editors) {
+                            // load if got all parameters and not loaded
+                            if(this.checkKeys(response.editors[i], ['cursor', 'directory']) && loadedEditors.findIndex((ed) => { return ed.directory == response.editors[i].directory }) == -1) {
+                                //console.log(response.editors[i]);
+                                loadedEditors.push(response.editors[i]);
+                            }
+                        }
+                    }
+                    
+                    //console.log(loadedEditors);
+                    
+                    // load each file
+                    this.$nextTick(() => {
+                        for(let i in loadedEditors) {
+                            this.loadFile(loadedEditors[i].directory, i, loadedEditors[i].cursor, response.activeEditor == loadedEditors[i].directory);
+                        }
+                    })
+                    
+                    // explorer part
+                    postRequest('access.php', {loadsave: JSON.stringify(response.explorer) }, (response, err) => {
+                        let json;
+                        try {
+                            json = JSON.parse(response);
+                        } catch(e) {
+                            this.handleError(response);
+                            console.error(e, response);
+                            return;
+                        }
+                        
+                        Vue.set(this, 'explorer', json);
+                        this.setExplorer(this.explorerElement, json);
+                        this.saveWS();
+                    });
+                });
+            },
+            
+            logout: function() {
+                window.location.href +="?logout";
+            },
+            
+            openGithub: function() {
+                // or open a popup
+                let win = window.open('https://bit.ly/workspace-github', '_blank');
+                win.focus();
+            },
+    
+            openInExplorer: function(target) {
+                this.drawer = this.isDesktop;
+                if(target.classList.contains('file')) {
+                    // do not load if alreasy loaded
+                    const dir = target.getAttribute('data-src');
+                    const index = this.editors.list.findIndex(function(editor) { return editor.directory == dir});
+                    if(index != -1) {
+                        this.switchTab(index);
+                    } else {
+                        this.loadFile(dir, this.editors.list.length);
+                    }
+                } else if(target.classList.contains('folder') && !target.classList.contains('charging')) {
+                    if(target.classList.contains('charged')) {
+                        
+                        // delete from charged folders this folder
+                        let directories = target.getAttribute('data-src').split('/');
+                        directories.pop();
+                        let lastdir = directories.pop();
+                        let currentFolder = this.chargedFolders;
+                        
+                        let i = 0;
+                        while(directories[i] in currentFolder) {
+                            currentFolder = currentFolder[directories[i]];
+                            i++;
+                        }
+                        delete currentFolder[lastdir];
+                    
+                        // remove class
+                        target.classList.remove('charged');
+                        // remove list ol
+                        target.parentElement.lastElementChild.remove();
+                        this.saveWS();
+                    } else {
+                    // change to charging icon
+                        target.classList.add('charging');
+                        this.loadExplorer(target.getAttribute('data-src'), target);
+                    }
+                }
+            },
+            
+            openSettings: function() {
+                this.$refs.passwordform.reset()
+                this.getVersions(() => {
+                    this.settings.dialog = true;
+                });
+            },
+            
+            push: function(context, key, val) {
+                let arr = context[key];
+                arr.push(val);
+                Vue.set(context, key, arr);
+            },
+    
+            saveFile: function() {
+                this.getActiveEditor().EditSession = this.editors.aceEditor.getSession();
+                let saving = miniNotif.addNotif({
+                    process: false,
+                    text: 'Saving ' + this.getActiveEditor().filename
+                })
+                postRequest("save.php", { dir : this.getActiveEditor().directory, content: this.getActiveEditor().EditSession.getValue() }, (response, err) => {
+                    miniNotif.done(saving);
+                    if(err) {
+                        this.handleError(response);
+                        return;
+                    }
+                    // send good response
+                    if(response == 'done') {
+                        this.snackbar = true;
+                        this.snackbarText = "File saved";
+                        this.saveWS();
+                    }
+                });
+            },
+    
+            saveWS: function() {
+                // editors
+                const activeEditor = (this.getActiveEditor() != undefined) ? this.getActiveEditor().directory : '';
+                let savedEditors = [], isActiveEditor;
+                for(let i in this.editors.list) {
+                    isActiveEditor = this.editors.activeEditor == this.editors.list[i].directory;
+                    savedEditors.push({
+                        cursor:  (isActiveEditor) ? this.editors.aceEditor.getCursorPosition() : this.editors.list[i].cursor,
+                        directory:  this.editors.list[i].directory
+                    })
+                }
+                
+                // explorer + nightTheme
+                let json = {
+                    explorer: {
+                        ".." : this.chargedFolders[""]
+                    },
+                    activeEditor: this.editors.activeEditor,
+                    nightTheme : this.settings.nightTheme,
+                    editors: savedEditors
+                };
+                
+                // save tabs
+                postRequest("savetabs.php", {json : JSON.stringify(json)}, (response, err) => {
+                    if(err) {
+                        this.handleError(response);
+                    } else {
+                        console.log("WorkSpace saved.");
+                    }
+                });
+            },
+            
+            setExplorer: function(element, json) {
+                element.appendHTML("<ol></ol>");
+                element = element.querySelector("ol");
+                
+                let foldername;
+                let currentFolder;
+                let i;
+                for(let key in json.folder) {
+                    if(typeof(json.folder[key]) == "string") {
+                        element.appendHTML('<li><a class="folder context custoMe" href="' + key + '" data-name="folder" data-src="' + key + '">' + json.folder[key] + '</a></li>');
+                    } else {
+                        // display the charged folder
+                        foldername = key.split('/');
+                        foldername.pop();
+                        currentFolder = this.chargedFolders; 
+                        i = 0;
+                        while(foldername[i] in currentFolder) {
+                            currentFolder = currentFolder[foldername[i]];
+                            i++;
+                        }
+                        foldername = foldername[i];
+                        
+                        currentFolder[foldername] = {};
+                        
+                        foldername = key.split('/');
+                        element.appendHTML('<li><a class="folder charged context custoMe" href="' + key + '" data-name="folder" data-src="' + key + '">' + foldername[foldername.length - 2] + '</a></li>');
+                        this.setExplorer(element.lastElementChild, json.folder[key]);
+                    }
+                }
+                
+                let ext;
+                for(let i = 0; i < json.file.length; i++) {
+                    for(let key in json.file[i]) {
+                        ext = json.file[i][key].split('.');
+                        ext = ext[ext.length-1];
+                        element.appendHTML('<li><a class="file context custoMe ' + ext + '" href="' + key + '" data-name="file" data-src="' + key + '" data-ext="' + ext + '">' + json.file[i][key] + '</a></li>');
+                    }
+                }
+            },
+            
+            switchEditor: function(id = -1) {
+                this.activeEditor(id);
+            },
+    
+            switchTab: function(index) {
+                this.activeEditor((this.editors.list[index]) ? this.editors.list[index].directory : -1);
+            },
+            
+            update: function(key, val, index = -1) {
+                if(index == -1) {
+                    let temp = this[key];
+                    for(attribute in val) {
+                        temp[attribute] = val[attribute];
+                    }
+                    this[key] = temp;
+                } else {
+                    let temp = this[key][index];
+                    for(attribute in val) {
+                        temp[attribute] = val[attribute];
+                    }
+                    this[key][index] = temp;
                 }
             }
-        }
-        return undefined;
-    },
-
-    // switch tabs
-    switchEditor: function(id = undefined) {
-        if(id === undefined) {
-            if(this.list.length) {
-                id = Workspace.list[0].id;
-            } else {
-                $('title').text('WorkSpace');
-                return;
+        },
+        computed: {
+            activeEditorName: function() {
+                return (this.editors.list.length != 0 && this.getActiveEditor()) ? this.getActiveEditor().filename : '';
+            },
+            colorTheme: function() {
+                return (this.settings.nightTheme) ? "#222" : this.color;
+            },
+            isDesktop: function() {
+                return this.$vuetify.breakpoint.lgAndUp;
             }
+        },
+        watch: {
+           '$vuetify.breakpoint.lgAndUp': function () {
+               this.adjustEditor();
+           },
+           'settings.nightTheme': function() {
+               this.adjustEditor();
+               this.saveWS();
+           }
         }
-        
-        // tabs
-        $(this.tab_element).removeClass('active');
-        $(this.tab_element + '.' + id).addClass('active');
-
-        // editors
-        $(this.editors_element + ' > .editor').hide();
-        var e = this.searchEditor('id',id);
-        e.ace_editor.focus();
-        
-        // title
-        $('title').text('WorkSpace - ' + e.filename);
-        
-        $('#' + e.name).show();
-        
-        //save tabs
-        Workspace.saveWs();
-    },
-
-    // delete editor
-    deleteEditor: function(id, dir) {
-        // remove tab
-        $('.tab.' + id).remove();
-        
-        //delete localStorage element
-        localStorage.removeItem(dir);
-
-        //remove editor
-        var e = this.searchEditor('id',id);
-        $('#' + e.name).remove();
-
-        //remove list object
-        var i = this.searchEditor('id',id, true);
-        this.list.splice(i, 1);
-
-        //switch to first tab
-        this.switchEditor();
-    }
-}
-
-// how to switch to previous tabs : Shift-)
-$(document).on('keydown', function(e) {
-    if (e.shiftKey && e.which == 169) {
-        e.preventDefault();
-        var active = $('.tab.active');
-        if($('.tab').length > 1) {
-            var index = $('.tab').index(active);
-            if(index > 0) {
-                var prevId = $('.tab.active').prev().attr('alt');
-                Workspace.switchEditor(prevId);
-            }
-        }
-    }
-});
-// how to switch  to next tab : Shift-=
-$(document).on('keydown', function(e) {
-    if (e.shiftKey && e.which == 61) {
-        e.preventDefault();
-        var active = $('.tab.active');
-        if($('.tab').length > 1) {
-            var index = $('.tab').index(active);
-            if(index < ($('.tab').length-1)) {
-                var nextId = $('.tab.active').next().attr('alt');
-                Workspace.switchEditor(nextId);
-            }
-        }
-    }
-});
-
-// how to switch between tabs
-$(document).on('click', '.tab', function(){
-    var id = $(this).attr('alt');
-    Workspace.switchEditor(id);
-});
-
-//how to switch beetween tabs with alt + shift + numbers
-$(document).on('keydown', function(e) {
-    // if is a top digit
-    var number = (e.which > 48) && (e.which < 58);
-    if (e.shiftKey && e.altKey && number) {
-        var index = parseInt(String.fromCharCode(e.keyCode));
-        // if number is lower or equal to the number of editors
-        if(index <= Workspace.list.length) {
-            // switch tab
-            var id = Workspace.list[index-1].id; 
-            Workspace.switchEditor(id);
-        } else {
-            if(Workspace.list.length && index==9) {
-                var id = Workspace.list[Workspace.list.length-1].id;
-                Workspace.switchEditor(id);
-            }
-        }
-        return false;
-    }
-});
-
-// how to close a tab
-$(document).on('click', '.tab .close', function(event){
-    event.stopPropagation();
-    var id = $(this).parent().attr('alt');
-    var dir = Workspace.searchEditor('id',id).directory;
-    Workspace.deleteEditor(id, dir);
-    Workspace.saveWs();
-});
-
-$(document).ready(function() {
-    // init editor instance
-    Workspace.init();
-    
-    //init jquery ui
-    $( "#top" ).resizable({
-    	handles: 's',
-    	minHeight: 150,
-    	resize: function(event, ui) {
-    		var parentSize = ui.element.parent().innerHeight();
-    		
-    		var nextSize = parentSize - ui.size.height;
-    		
-    		var nextElement = ui.element.next();
-    		nextElement.css('height', nextSize);
-    		
-    		// saves size
-            Workspace.saveWs();
-    
-    		// solve bug ace editor to resize to content height
-    		window.dispatchEvent(new Event('resize'));
-    	}
-    });
-    
-    //make tabs sortables
-    $( Workspace.tabs_element ).sortable({
-		axis: "x",
-		helper : 'clone',
-        items: 'div.tab',
-        stop: function(){
-            Workspace.saveWs();
-        }
-	});
-    $( "#sortable" ).disableSelection();
-    
-    // update iframe on enter key
-    $('#urlbar').on('submit', function(e) {
-        e.preventDefault();
-        iframeload();
-        Workspace.saveWs();
-    });
-});
+    })
+})

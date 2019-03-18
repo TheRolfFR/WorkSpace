@@ -8,29 +8,18 @@ if(connected())  {
 $filename = "password.txt";
 $modify = false;
 
-if(file_exists($filename)) {
-    $file = file_get_contents($filename);
-    if(!empty($file)) {
-        if($file == 'password') {
-            $modify = true;
-        }
-    } else {
-        echo "ERROR : file password.txt empty, please redownload it.";
-        die;
-    }
-} else {
-    echo "ERROR : no file password.txt in this folder";
-    die;
+if(!file_exists($filename) || empty(file_get_contents($filename))) {
+    $modify = true;
 }
 
 if($modify) {
     $form = '<p><strong>You have to modify the default password to use WorkSpace</strong></p>
-            <input type="password" autocomplete="off" required autofocus name="new_password" placeholder="Type a new password">
-            <input type="password" autocomplete="off" required name="confirm_password" placeholder="Confirm your new password">';
+            <input type="password" autocomplete="off" required autofocus name="new_password" placeholder="Type a new password" class="password">
+            <input type="password" autocomplete="off" required name="confirm_password" placeholder="Confirm your new password" class="password">';
 
     if(isset($_POST) and !empty($_POST)) {
         if(check($_POST['new_password']) and check($_POST['confirm_password'])) {
-            if( (sec($_POST['new_password']) == sec($_POST['confirm_password'])) and (md5(sec($_POST['new_password'])) != $file) ) {
+            if(sec($_POST['new_password']) == sec($_POST['confirm_password'])) {
                 $new_password = md5(sec($_POST['new_password']));
                 file_put_contents('password.txt', $new_password);
                 redirect('this');
@@ -38,13 +27,12 @@ if($modify) {
         }
     }
 } else {
-    $form = '<div id="advice">Advice: don\'t use WorkSpace in a public Wi- without a SSL certificate</div>' . 
-    '<input type="password" required autofocus name="password" placeholder="Password">';
+    $form = '<div id="advice">Don\'t use WorkSpace in a public Wi- without a SSL certificate</div>' . 
+    '<div id="passcontainer"><input type="password" required autofocus name="password" placeholder="Password" class="password"></div>';
 
     if(check($_POST)) {
         if(check($_POST['password'])) {
-            $password = md5(sec($_POST['password']));
-            if($password == $file) {
+            if(md5(sec($_POST['password'])) == file_get_contents($filename)) {
                 $_SESSION['workspace'] = 'I love WorkSpace';
                 redirect('editor');
             }
@@ -57,26 +45,48 @@ if($modify) {
     <head>
         <?php $nostyle = ""; $title = "WorkSpace"; require('include/head.php')?>
         <link rel="stylesheet" href="css/homepage.css">
+        <script>
+            document.addEventListener('DOMContentLoaded', function(){
+            document.getElementById('title').addEventListener('click', function(){
+	document.body.classList.add('active');
+});
+
+document.getElementById('close').addEventListener('click', function(){
+	document.body.classList.remove('active');
+});
+            })
+        </script>
     </head>
-    <body class="middle">
-    	<div id="present">
-    		<h2>
-    			<div>Code your website in your website</div>
-    			<div>Everywhere</div>
-    			<div>Anywhere</div>
-    		</h2>
-    		<img src="img/screen.png" alt="picture">
-    	</div><div class="quart">
-    		<form action="" method="post">
-    			<h3 class="middle" id="title">
-    				<img src="img/workspace_logo_no_bg_white.png" alt="WS"><span>WorkSpace</span>
-    			</h3><p>Created by <a href="http://bit.ly/therolf-github" style="text-decoration: underline" target="_blank">TheRolf</a></p>
-                <?= $form; ?>
-    			<input value="Connect" class="submit" type="submit">
-    		</form>
-    		<a href="https://github.com/TheRolfFR/WorkSpace"><div class="element" id="github">
-    		    <i class="fa fa-github-alt" aria-hidden="true"></i><span> VIEW ON GITHUB</span>
-    		</div></a>
-    	</div><span class="taille"></span>
+    
+    <body>
+        <h3 id="creator">Created by TheRolf</h3>
+
+<a id="forkme" href="http://bit.ly/workspace-github" target="_blank"><img width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_darkblue_121621.png?resize=149%2C149" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1"></a>
+
+<div id="titlecontainer">
+	<div id="title">
+		<img src="https://therolf.fr/workspace/img/workspace_logo_no_bg_white.png" alt="ws" class="floatleft"><span class="noselect">Login</span>
+	</div>
+</div>
+
+
+<div class="middle">
+	<span class="taille"></span><form action="" id="loginform" method="POST" class="element middle">
+		<div id="left" class="middle">
+			<img src="https://therolf.fr/workspace/img/workspace_logo_no_bg_white.png" alt="WS"><span class="taille"></span>
+		</div><div id="right">
+			<div id="close" class="noselect"><i class="material-icons">close</i></div>
+
+			<h2>WorkSpace - Login</h2>
+
+			<?= $form; ?>
+			
+			<div>
+				<span id="sn" class="middle"><a href="http://bit.ly/workspace-github" target="_blank"><i class="fab fa-github-alt fa-2x"></i></a><span class="taille"></span></span>
+				<input type="submit" value="Login" class="" id="submit">
+			</div>
+		</div>
+	</form>
+</div>
     </body>
 </html>
