@@ -10,6 +10,10 @@
 ![https://bit.ly/therolf-webite](https://img.shields.io/badge/Author-TheRolf-31a589.svg?style=flat-square) 
 ![https://opensource.org/licenses/NPOSL-3.0](https://img.shields.io/badge/license-NPOSL--3.0-3DA639.svg?style=flat-square) 
 
+<img src="img/screenshots/workspace-2-login.png" alt="dark mode editor" />
+<img src="img/screenshots/workspace-2-editor.png" alt="dark mode editor" />
+<img src="img/screenshots/workspace-2-editor-light.png" alt="dark mode editor" />
+
 ## New things in WorkSpace 2.0
 - No jQuery
 - Vue and Vuetify

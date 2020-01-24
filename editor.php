@@ -39,8 +39,8 @@
         
         <!-- Vue.js + Vuetify -->
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.8/dist/vue.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.js"></script>
-        <link href="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/vuetify@1.5.6/dist/vuetify.min.js"></script>
+        <link  href="https://cdn.jsdelivr.net/npm/vuetify@1.5.6/dist/vuetify.min.css" rel="stylesheet">
         
         <!-- my js -->
         <script src="js/polyfill.js"></script>
