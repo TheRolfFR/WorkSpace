@@ -73,7 +73,7 @@ let custoMenu = {
 
 		// adjust position
 		if(e.pageY + ctxmenu.offsetHeight > window.innerHeight) {
-			ctxmenu.setStyle('top', e.pageY - ctxmenu.offsetHeight);
+			ctxmenu.setStyle('top', e.pageY - ctxmenu.offsetHeight + 'px');
 		}
 	},
 	closeMenu: function() {
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 	document.body.addEventListener('click', function(evt){
 		let el = evt.target;
-		while(el != null && el != document.body && !el.parentElement.classList.contains('custoMenu') && el.tagName != "LI") {
+		while(el != null && el != document.body && el.parentElement != null && !el.parentElement.classList.contains('custoMenu') && el.tagName != "LI") {
 			el = el.parentElement;
 		}
 

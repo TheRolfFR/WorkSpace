@@ -12,16 +12,21 @@
     }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="FR-fr">
     <head>
         <?php $title = "WorkSpace"; require_once('include/head.php'); ?>
         <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" >
         <meta name="theme-color" content="#0060ac">
         
         <!-- Ace Editor : text editor !-->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ace.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-language_tools.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ext-emmet.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.min.js"></script>
+        <script src="https://cloud9ide.github.io/emmet-core/emmet.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-modelist.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-emmet.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-themelist.min.js"></script>
+        <script src="theme/srcery.js"></script>
+        <link rel="stylesheet" href="theme/srcery.css">
         
         <!-- jshashes : Hashes library for JS -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jshashes/1.0.7/hashes.min.js"></script>
@@ -41,6 +46,10 @@
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.8/dist/vue.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/vuetify@1.5.6/dist/vuetify.min.js"></script>
         <link  href="https://cdn.jsdelivr.net/npm/vuetify@1.5.6/dist/vuetify.min.css" rel="stylesheet">
+        
+        <!-- my Vue.js components -->
+        <script src="js/components/directory.js"></script>
+        <script src="js/components/directoryEntry.js"></script>
         
         <!-- my js -->
         <script src="js/polyfill.js"></script>
@@ -215,8 +224,9 @@
                         <li v-for="(item, index) in editors.list" :key="index" :class="[item.mime, 'file']" v-on:click><a href="#">{{ item.filename }}</a></li>
                     </ul>
                 </v-card>
-                <div id="explorer" :class="{ desktop: $vuetify.breakpoint.lgAndUp }">
+                <div id="explorer" data-name="content" data-src="/" :class="{ desktop: $vuetify.breakpoint.lgAndUp, custoMe: true }">
                     <h3 class="hidden-lg-and-up">Explorer</h3>
+                    <directory :content="explorer"></directory>
                 </div>
             </v-navigation-drawer>
             <div id="settingspanel" class="middle">
@@ -243,7 +253,7 @@
             <!-- Desktop toolbar -->
             <v-toolbar height="48" :color="colorTheme" dark app class="toolbar elevation-2 hidden-md-and-down">
                 <v-tabs dark color="transparent" show-arrows>
-                    <v-tabs-slider></v-tabs-slider>
+                    <v-tabs-slider v-show="editors.list.length != 0"></v-tabs-slider>
                     <v-tab ref="tabs" v-for="(editor, index) in editors.list" :key="index" :class="editor.mime" v-on:click="activeEditor(editor.directory)" v-on:contextmenu.prevent="closeEditor(editor.directory)">{{ editor.filename }}</v-tab>
                 </v-tabs>
                 

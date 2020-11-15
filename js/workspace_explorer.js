@@ -479,14 +479,14 @@ let contentmenu = {
             }
 		},
 		'newfile' : { 
-			text: '<i class="fa fa-file-o" aria-hidden="true"></i> New file',
+			text: '<i class="fas fa-file-medical"></i> New file',
 			desc: 'New file',
             func: function() {
                 WorkSpaceExplorer.newFile()
             }
 		},
 		'newfolder' : {
-			text: '<i class="fa fa-folder-o" aria-hidden="true"></i> New folder',
+			text: '<i class="fas fa-folder-plus"></i> New folder',
 			desc: 'New folder',
             func: function() {
                 WorkSpaceExplorer.downloadFolder()

@@ -147,6 +147,9 @@ filter:progid:DXImageTransform.Microsoft.Shadow(color=rgba(0,0,0,0.3), Direction
 #explorer ol, #list {
     padding-left: 8px;
 }
+#explorer > ol {
+    padding-bottom: 20px;
+}
 #drawer h3 {
     margin: 0 8px 8px;
 }

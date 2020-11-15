@@ -3,13 +3,16 @@ document.addEventListener('DOMContentLoaded', function(){
     WorkSpace = new Vue({
         el: '#app',
         data: () => ({
+            themes: {
+                light: 'ace/theme/kuroir',
+                dark: 'ace/theme/srcery'
+            },
             drawer: false,
             snackbar: false,
             snackbarText: "",
             color: "#0060ac",
             explorer: {},
             explorerElement: undefined,
-            chargedFolders: { "": {}}, 
             editors: {
                 aceEditor: undefined,
                 element: undefined,
@@ -79,10 +82,15 @@ document.addEventListener('DOMContentLoaded', function(){
                     this.$nextTick(function() {
                         activeEditor = this.getActiveEditor();
                         
-                        this.editors.aceEditor.setSession(activeEditor.EditSession);
-                        this.editors.aceEditor.gotoLine(activeEditor.cursor.row+1, activeEditor.cursor.column, false);
-                        this.editors.aceEditor.scrollToRow(activeEditor.cursor.row);
-                        this.editors.aceEditor.focus();
+                        if(activeEditor != undefined) {
+                            this.editors.aceEditor.setSession(activeEditor.EditSession);
+                            this.editors.aceEditor.scrollToLine(activeEditor.cursor.row+1, true, false, function(){});
+                            this.editors.aceEditor.gotoLine(activeEditor.cursor.row+1, activeEditor.cursor.column, false);
+                            this.editors.aceEditor.focus();
+                        } else  {
+                            this.editors.activeEditors = undefined;
+                            this.editors.element.style.display = 'none';
+                        }
                     })
                 } else  {
                     this.editors.activeEditors = undefined;
@@ -99,11 +107,11 @@ document.addEventListener('DOMContentLoaded', function(){
                 } else {
                     this.editors.element.classList.remove('desktop');
                 }
-                if(!this.settings.nightTheme && this.editors.aceEditor.getTheme() == "ace/theme/pastel_on_dark") {
-                    this.editors.aceEditor.setTheme("ace/theme/kuroir");
+                if(!this.settings.nightTheme && this.editors.aceEditor.getTheme() == this.themes.dark) {
+                    this.editors.aceEditor.setTheme(this.themes.light);
                 }
-                if(this.settings.nightTheme && this.editors.aceEditor.getTheme() == "ace/theme/kuroir") {
-                    this.editors.aceEditor.setTheme("ace/theme/pastel_on_dark");
+                if(this.settings.nightTheme && this.editors.aceEditor.getTheme() == this.themes.light) {
+                    this.editors.aceEditor.setTheme(this.themes.dark);
                 }
             },
             
@@ -141,19 +149,21 @@ document.addEventListener('DOMContentLoaded', function(){
                 // get index of the editor to close
                 const index = this.editors.list.findIndex(function(editor) { return editor.directory == dir});
                 
+                // IMPORTANT: DELETE FIRST EDITOR
+                let editors = this.editors.list;
+                editors.splice(index, 1);
+                this.editors.list = editors;
+                
+                // IMPORTANT THEN SWITCH TO ANOTHER ONE
                 // switch to previous editor or the first one
                 if(this.$refs.tabs.length) {
-                    this.switchTab((index - 1 < 0) ? 0 : index -1);
+                    const indexTab = (index - 1 < 0) ? 0 : index - 1;
+                    this.switchTab(indexTab);
                 } // or display no editor
                 else {
                     this.activeEditor(-1);
                 }
                 
-                let editors = this.editors.list;
-                
-                editors.splice(index, 1);
-                
-                this.editors.list = editors;
                 this.saveWS();
             },
             
@@ -164,6 +174,36 @@ document.addEventListener('DOMContentLoaded', function(){
                     return arr[0];
                 }
                 return undefined;
+            },
+            
+            getLoadedFolders: function(dir = undefined, dirpath = '..') {
+                if(dir === undefined) dir = this.explorer
+                
+                const result = {}
+                let notFound = true
+                
+                // now we need to cross through the explorer element and add charged folders
+                // aka folder that type Object
+                for(let key in dir.folder) {
+                    let fullpath = key
+                    
+                    if(typeof(dir.folder[fullpath]) === 'object') {
+                        let sp = fullpath.split('/')
+                        sp.pop()
+                        result[sp.pop()] = this.getLoadedFolders(dir.folder[fullpath], fullpath)
+                        notFound = false
+                    }
+                }
+                
+                if(notFound)
+                    return dirpath
+                
+                return result
+            },
+            
+            getModeByFileExtension: function(path){
+                var modelist = ace.require("ace/ext/modelist");
+                return modelist.getModeForPath(path).mode;
             },
             
             getVersions: function(callback = undefined) {
@@ -219,6 +259,7 @@ document.addEventListener('DOMContentLoaded', function(){
             
             loadExplorer: function(directory, destination) {
                 postRequest('access.php', {loadfolder: directory}, (response, err) => {
+                    // console.log(directory, destination)
                     // remove charging class does not tell if it was successful
                     destination.classList.remove('charging');
                     
@@ -231,24 +272,36 @@ document.addEventListener('DOMContentLoaded', function(){
                         return;
                     }
                     
-                    // if so it is charged
-                    destination.classList.add('charged');
-                    // add content to explorer
-                    this.setExplorer(destination.parentElement, json);
+                    // console.log(json)
                     
-                    // add in charged folders
-                    let directories = directory.split('/');
-                    directories.pop();
-                    let currentFolder = this.chargedFolders;
-                    let i = 0;
-                    while(directories[i] in currentFolder) {
-                        currentFolder = currentFolder[directories[i]];
-                        i++;
+                    const directorySplit = directory.split('/')
+                    directorySplit.splice(0, 1) // remove first one
+                    directorySplit.pop() // remove last one
+                    
+                    if(directorySplit.length === 0)
+                        return
+                    
+                    let location = this.explorer.folder // define variable to update
+                    let path = '/' + directorySplit[0] + '/' // define field to update
+                    
+                    directorySplit.splice(0, 1) // remove first directory
+                    
+                    // navigate through the path
+                    // /folder/
+                    // /folder/subfolder/
+                    // /folder/subfolder/subsubfolder/
+                    
+                    while(directorySplit.length > 0) {
+                        location = location[path].folder
+                        path = path + directorySplit[0] + '/'
+                        
+                        directorySplit.splice(0, 1)
                     }
                     
-                    directories = directories[i];
+                    // console.warn(location, path)
                     
-                    currentFolder[directories] = {};
+                    Vue.set(location, path, json)
+                    
                     this.saveWS();
                 });
             },
@@ -277,7 +330,8 @@ document.addEventListener('DOMContentLoaded', function(){
                             default:
                                 break;
                         }
-                        const mode = "ace/mode/" + mime;
+                        
+                        const mode = this.getModeByFileExtension(filename);
                         
                         // push to editors list
                         this.push(this.editors, 'list', {
@@ -285,6 +339,7 @@ document.addEventListener('DOMContentLoaded', function(){
                             EditSession: new ace.createEditSession(json[1], mode),
                             filename: filename,
                             cursor: cursor,
+                            offset: 0,
                             mime: mime
                         });
                         
@@ -337,9 +392,14 @@ document.addEventListener('DOMContentLoaded', function(){
                         }
                     })
                     
+                    // console.warn(response.explorer)
+                    
                     // explorer part
+                    // save looks like
+                    // { ".." : { "folder": { "folder/subfolder" : "folder/subfolder" }}}
                     postRequest('access.php', {loadsave: JSON.stringify(response.explorer) }, (response, err) => {
                         let json;
+                        // console.warn(response, err)
                         try {
                             json = JSON.parse(response);
                         } catch(e) {
@@ -349,7 +409,6 @@ document.addEventListener('DOMContentLoaded', function(){
                         }
                         
                         Vue.set(this, 'explorer', json);
-                        this.setExplorer(this.explorerElement, json);
                         this.saveWS();
                     });
                 });
@@ -366,7 +425,10 @@ document.addEventListener('DOMContentLoaded', function(){
             },
     
             openInExplorer: function(target) {
+                // close navigation drawer in not a desktop mode
                 this.drawer = this.isDesktop;
+                
+                // of this is a file
                 if(target.classList.contains('file')) {
                     // do not load if alreasy loaded
                     const dir = target.getAttribute('data-src');
@@ -377,25 +439,42 @@ document.addEventListener('DOMContentLoaded', function(){
                         this.loadFile(dir, this.editors.list.length);
                     }
                 } else if(target.classList.contains('folder') && !target.classList.contains('charging')) {
+                    // if this is not a loading folder
                     if(target.classList.contains('charged')) {
+                        // delete folder from data
                         
-                        // delete from charged folders this folder
-                        let directories = target.getAttribute('data-src').split('/');
-                        directories.pop();
-                        let lastdir = directories.pop();
-                        let currentFolder = this.chargedFolders;
+                        // get directory
+                        const src = target.getAttribute('data-src')
+                        // console.warn(src)
                         
-                        let i = 0;
-                        while(directories[i] in currentFolder) {
-                            currentFolder = currentFolder[directories[i]];
-                            i++;
+                        const directorySplit = src.split('/') // split directory
+                        directorySplit.splice(0, 1) // remove first /
+                        directorySplit.pop() // remove last /
+                        
+                        if(directorySplit.length !== 0) {
+                            let location = this.explorer.folder
+                            let path = '/' + directorySplit[0] + '/' // first folder
+                            let folderName = directorySplit[0] // first folder name
+                            directorySplit.splice(0, 1) // remove first occurence
+                            
+                            while(directorySplit.length > 0) {
+                                location = location[path].folder // get inside folder
+                                path = path + directorySplit[0] + '/' // append first folder name
+                                folderName = directorySplit[0] // the folder name is now the first name
+                                
+                                directorySplit.splice(0, 1) // remove occurence
+                            }
+                            
+                            // console.warn(location, path, folderName)
+                            
+                            // we have the object=location, the field=path, the newvalue=folder's name
+                            Vue.set(location, path, folderName)
+                        } else {
+                            // I am at root
+                            this.explorer.folder = {}
+                            this.explorer.file = []
                         }
-                        delete currentFolder[lastdir];
-                    
-                        // remove class
-                        target.classList.remove('charged');
-                        // remove list ol
-                        target.parentElement.lastElementChild.remove();
+                        
                         this.saveWS();
                     } else {
                     // change to charging icon
@@ -453,9 +532,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 
                 // explorer + nightTheme
                 let json = {
-                    explorer: {
-                        ".." : this.chargedFolders[""]
-                    },
+                    explorer: this.chargedFolders,
                     activeEditor: this.editors.activeEditor,
                     nightTheme : this.settings.nightTheme,
                     editors: savedEditors
@@ -469,46 +546,6 @@ document.addEventListener('DOMContentLoaded', function(){
                         console.log("WorkSpace saved.");
                     }
                 });
-            },
-            
-            setExplorer: function(element, json) {
-                element.appendHTML("<ol></ol>");
-                element = element.querySelector("ol");
-                
-                let foldername;
-                let currentFolder;
-                let i;
-                for(let key in json.folder) {
-                    if(typeof(json.folder[key]) == "string") {
-                        element.appendHTML('<li><a class="folder context custoMe" href="' + key + '" data-name="folder" data-src="' + key + '">' + json.folder[key] + '</a></li>');
-                    } else {
-                        // display the charged folder
-                        foldername = key.split('/');
-                        foldername.pop();
-                        currentFolder = this.chargedFolders; 
-                        i = 0;
-                        while(foldername[i] in currentFolder) {
-                            currentFolder = currentFolder[foldername[i]];
-                            i++;
-                        }
-                        foldername = foldername[i];
-                        
-                        currentFolder[foldername] = {};
-                        
-                        foldername = key.split('/');
-                        element.appendHTML('<li><a class="folder charged context custoMe" href="' + key + '" data-name="folder" data-src="' + key + '">' + foldername[foldername.length - 2] + '</a></li>');
-                        this.setExplorer(element.lastElementChild, json.folder[key]);
-                    }
-                }
-                
-                let ext;
-                for(let i = 0; i < json.file.length; i++) {
-                    for(let key in json.file[i]) {
-                        ext = json.file[i][key].split('.');
-                        ext = ext[ext.length-1];
-                        element.appendHTML('<li><a class="file context custoMe ' + ext + '" href="' + key + '" data-name="file" data-src="' + key + '" data-ext="' + ext + '">' + json.file[i][key] + '</a></li>');
-                    }
-                }
             },
             
             switchEditor: function(id = -1) {
@@ -544,6 +581,11 @@ document.addEventListener('DOMContentLoaded', function(){
             },
             isDesktop: function() {
                 return this.$vuetify.breakpoint.lgAndUp;
+            },
+            chargedFolders: function() {
+                let l = this.getLoadedFolders()
+                
+                return { "..": l }
             }
         },
         watch: {
@@ -553,6 +595,12 @@ document.addEventListener('DOMContentLoaded', function(){
            'settings.nightTheme': function() {
                this.adjustEditor();
                this.saveWS();
+           },
+           explorer: {
+               handler: function(_val, _oldval) {
+                   this.saveWS();
+               },
+               deep: true
            }
         }
     })

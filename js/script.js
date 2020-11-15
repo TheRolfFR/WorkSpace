@@ -1,9 +1,11 @@
 let aceEditor;
+let themeList;
 document.addEventListener('DOMContentLoaded', function(){
     
     // intialize the editor
     ace.require("ace/ext/emmet");
     ace.require("ace/ext/language_tools");
+    themeList = ace.require("ace/ext/themelist");
     aceEditor = ace.edit("editor", {
         showPrintMargin: false,
         enableBasicAutocompletion: true
